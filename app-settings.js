@@ -11,11 +11,11 @@ const CONFIG = {
     models: {
         // Архитектор (Blueprint) - определяет структуру теста (персонажи или шкалы)
         // Рекомендуется: GPT-4o-mini (баланс скорость/качество) или Claude-3.5-sonnet
-        architect: 'openai/gpt-4o-mini',
+        architect: 'xiaomi/mimo-v2-flash:free',
         
         // Генератор контента (Questions) - создает сами вопросы
         // Рекомендуется: GPT-4o-mini
-        generator: 'openai/gpt-4o-mini',
+        generator: 'xiaomi/mimo-v2-flash:free',
     },
 
     // ===== ПАРАМЕТРЫ ГЕНЕРАЦИИ =====
