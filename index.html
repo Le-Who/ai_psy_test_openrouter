@@ -215,14 +215,14 @@
 </div>
 
 <!-- CONFIG LOADING -->
-<script src="config.js"></script>
+<script src="app-settings.js"></script>
 
 <script>
     // 1. Проверка загрузки конфига
     if (typeof CONFIG === 'undefined') {
         const errDiv = document.getElementById('errorBox');
         errDiv.style.display = 'block';
-        errDiv.innerHTML = '❌ <b>Ошибка:</b> Файл config.js не найден.<br>Убедитесь, что config.js лежит в одной папке с index.html.';
+        errDiv.innerHTML = '❌ <b>Ошибка:</b> Файл app-settings.js не найден.<br>Убедитесь, что app-settings.js лежит в одной папке с index.html.';
         throw new Error("Config missing");
     }
 
