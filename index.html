@@ -7,129 +7,140 @@
     <style>
         :root {
             --primary: #2563eb;
+            --primary-hover: #1d4ed8;
             --bg: #f8fafc;
             --surface: #ffffff;
             --text: #1e293b;
             --text-light: #64748b;
             --border: #e2e8f0;
             --radius: 12px;
+            --danger: #ef4444;
         }
 
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
 
         .container { max-width: 800px; margin: 0 auto; padding: 20px; }
         
         /* UI Components */
-        .card { background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-        .btn:hover { opacity: 0.9; }
-        .btn:disabled { opacity: 0.6; cursor: wait; }
+        .card { background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
         
-        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 8px; }
-        label { font-weight: 600; font-size: 14px; display: block; margin-top: 15px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 15px;}
+        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: #e2e8f0; color: var(--text); }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-text { background: none; color: var(--primary); padding: 0; width: auto; font-weight: 600; }
+        .btn-text:hover { text-decoration: underline; transform: none; background: none;}
+        
+        input, select { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; transition: border 0.2s; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        label { font-weight: 600; font-size: 14px; display: block; margin-top: 18px; color: var(--text); }
 
         /* Views */
-        .view { display: none; }
-        .view.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .view { display: none; animation: fadeIn 0.4s ease-out; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Test UI */
-        .likert-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 25px 0; }
-        .likert-opt { border: 2px solid var(--border); padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .likert-opt:hover { border-color: var(--primary); background: #eff6ff; }
-        .likert-opt.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        .likert-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 30px 0; }
+        .likert-opt { border: 2px solid var(--border); padding: 15px 5px; text-align: center; border-radius: 8px; cursor: pointer; font-weight: 700; color: var(--text-light); transition: all 0.2s; }
+        .likert-opt:hover { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+        .likert-opt.selected { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.05); }
 
-        .progress { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 20px; }
-        .bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+        .progress { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 25px; }
+        .bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.4s ease; }
 
         /* Results */
-        .res-item { margin-bottom: 15px; }
-        .res-bar-bg { background: #f1f5f9; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 5px; }
-        .res-bar-fill { background: var(--primary); height: 100%; }
+        .res-item { margin-bottom: 18px; }
+        .res-bar-bg { background: #f1f5f9; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 6px; }
+        .res-bar-fill { background: var(--primary); height: 100%; border-radius: 5px; }
 
-        /* Loading */
+        /* Loader */
         .loader { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s infinite; margin: 0 auto 20px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .header { text-align: center; margin-bottom: 30px; padding-top: 20px; }
+        .header h1 { margin: 0; font-size: 24px; color: var(--text); }
+        .header p { margin: 5px 0 0; color: var(--text-light); font-size: 14px; }
+        .badge { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 12px; font-size: 11px; vertical-align: middle; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="text-align: center; margin-bottom: 30px;">
-        <h1>🔮 Генератор Тестов имени Дуни Пахучей <span class="badge">💅</span></h1>
-        <div style="font-size: 12px; color: var(--color-text-secondary);">Поверед бай Хлопья с молоком</div>
+    <div class="header">
+        <h1>🔮 Генератор Тестов имени Дуни Пахучей</h1>
+        <p>Работает на хлопьях с молоком</p>
     </div>
 
-    <div id="errorBox" style="background:#fef2f2; color:#991b1b; padding:15px; border-radius:8px; display:none; margin-bottom:20px;"></div>
+    <div id="errorBox" style="background:#fef2f2; color:#991b1b; padding:15px; border-radius:8px; display:none; margin-bottom:20px; border:1px solid #fecaca;"></div>
 
-    <!-- VIEW: SETUP (ЭКРАН НАСТРОЕК) -->
+    <!-- 1. VIEW: SETUP -->
     <div id="setupView" class="view active">
-        
-        <!-- ВСТАВКА 1: Кнопка перехода в библиотеку -->
+        <!-- Кнопка Библиотеки -->
         <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-            <button onclick="app.openLibrary()" style="background:none; border:none; color:var(--primary); font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px;">
-                📂 Моя библиотека
-            </button>
+            <button onclick="app.openLibrary()" class="btn-text">📂 Моя библиотека</button>
         </div>
-        <!-- Конец вставки 1 -->
 
         <div class="card">
-             <h2 style="margin-top: 0;">Создать новый тест</h2>
-            <p style="color: var(--color-text-secondary); margin-bottom: 24px;">
-                Система автоматически выберет провайдера (OpenRouter или Gemini) в зависимости от вашего ключа.
-            </p>
+            <h2 style="margin-top: 0; font-size: 20px;">Новый тест</h2>
             <form id="setupForm">
-                <div class="form-group">
-                    <label>Тема теста</label>
-                    <input type="text" id="themeInput" placeholder="Например: Кто ты из Смешариков? или Уровень выгорания" required>
+                <label>Тема теста</label>
+                <input type="text" id="themeInput" placeholder="Например: Кто ты из Вселенной Гарри Поттера?" required>
+                
+                <label>Для кого (Аудитория)</label>
+                <input type="text" id="audienceInput" value="Общая" placeholder="Подростки, IT-специалисты...">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Вопросов</label>
+                        <select id="qCountInput">
+                            <option value="5">5 (Зачем?)</option>
+                            <option value="10">10 (Быстрый)</option>
+                            <option value="15">15 (Обычный)</option>
+                            <option value="25">25 (Подробный)</option>
+                            <option value="69">69 (Вирт?)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Провайдер</label>
+                        <select disabled style="background: #f1f5f9;">
+                            <option>Авто-выбор по ключу</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Аудитория</label>
-                    <input type="text" id="audienceInput" value="Общая" placeholder="Для кого этот тест?">
-                </div>
-                <div class="form-group">
-                    <label>Количество вопросов</label>
-                    <select id="qCountInput">
-                        <option value="5">5 (Зачем?)</option>
-                        <option value="10">10 (Быстрый)</option>
-                        <option value="15">15 (Обычный)</option>
-                        <option value="25">25 (Подробный)</option>
-                        <option value="69">69 (Вирт?)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>API Key</label>
-                    <input type="password" id="apiKeyInput" placeholder="sk-or-... (OpenRouter) или AIza... (Gemini)" required>
-                    <div class="hint">Ключ определяет, какая модель будет использована.</div>
-                </div>
-                <button type="submit" class="btn">🚀 Сгенерировать</button>
+
+                <label>API Ключ <span style="font-weight:normal; color:#64748b; font-size:12px;">(OpenRouter или Gemini)</span></label>
+                <input type="password" id="apiKeyInput" placeholder="sk-or-... или AIza..." required>
+                
+                <button type="submit" class="btn" style="margin-top: 25px;">🚀 Сгенерировать Тест</button>
             </form>
         </div>
     </div>
 
-    <!-- ВСТАВКА 2: НОВЫЙ ЭКРАН БИБЛИОТЕКИ -->
+    <!-- 2. VIEW: LIBRARY -->
     <div id="libraryView" class="view">
         <div id="libraryContent">
-            <!-- Сюда JavaScript будет вставлять список тестов -->
+            <!-- Сюда JS вставит список -->
         </div>
     </div>
-    <!-- Конец вставки 2 -->
 
-
-    <!-- LOADING -->
+    <!-- 3. VIEW: LOADING -->
     <div id="loadingView" class="view" style="text-align: center; padding-top: 50px;">
         <div class="loader"></div>
         <h3 id="loadTitle">Запуск...</h3>
         <p id="loadDesc" style="color: var(--text-light);">Инициализация моделей</p>
     </div>
 
-    <!-- TEST -->
+    <!-- 4. VIEW: TEST -->
     <div id="testView" class="view">
         <div class="progress"><div id="progressBar" class="bar"></div></div>
         <div class="card">
-            <div style="font-size: 12px; color: var(--text-light); margin-bottom: 10px;">ВОПРОС <span id="qNum">1</span></div>
-            <h3 id="qText" style="font-size: 20px; margin-bottom: 30px;">...</h3>
+            <div style="display:flex; justify-content:space-between; margin-bottom: 15px; color: var(--text-light); font-size: 13px; font-weight: 600;">
+                <span>ВОПРОС <span id="qNum">1</span></span>
+            </div>
+            <h3 id="qText" style="font-size: 22px; margin-bottom: 30px; line-height: 1.4;">...</h3>
             
             <div class="likert-grid">
                 <div class="likert-opt" onclick="app.answer(1)">1</div>
@@ -138,93 +149,67 @@
                 <div class="likert-opt" onclick="app.answer(4)">4</div>
                 <div class="likert-opt" onclick="app.answer(5)">5</div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-light); padding:0 5px;">
-                <span>Нет / Никогда</span>
-                <span>Да / Всегда</span>
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-light); padding:0 5px; font-weight:500;">
+                <span>❌ Нет / Никогда</span>
+                <span>✅ Да / Всегда</span>
             </div>
         </div>
     </div>
 
-    <!-- VIEW: RESULTS -->
+    <!-- 5. VIEW: RESULTS -->
     <div id="resultsView" class="view">
-        <div class="card" id="resultsContent"></div>
-        
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <!-- Кнопка начать заново -->
-            <button class="btn" onclick="location.reload()" style="flex: 1;">Создать новый</button>
-            
-            <!-- КНОПКА СОХРАНЕНИЯ (Новая) -->
-            <button class="btn btn-secondary" id="saveTestBtn" onclick="app.saveCurrentTest()" style="flex: 1;">
-                💾 Сохранить в библиотеку
-            </button>
+        <div class="card" id="resContent">
+            <!-- Результаты -->
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <button class="btn" onclick="location.reload()">↺ Создать новый</button>
+            <button class="btn btn-secondary" id="saveTestBtn" onclick="app.saveCurrentTest()">💾 Сохранить в библиотеку</button>
         </div>
     </div>
+</div>
 
+<!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
+<!-- 1. Настройки (Промпты, Схемы, Конфиг моделей) -->
 <script src="app-settings.js"></script>
-<script>
-// --- ПАТЧ КОНФИГА ---
-// Принудительно ставим нужные модели, игнорируя то, что в файле
-if (typeof CONFIG !== 'undefined') {
-    CONFIG.providers = CONFIG.providers || {};
-    // Настройка OpenRouter
-    CONFIG.providers.openrouter = {
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        models: {
-            architect: 'xiaomi/mimo-v2-flash:free',
-            generator: 'xiaomi/mimo-v2-flash:free'
-        },
-        headers: (key) => ({
-            'Authorization': `Bearer ${key}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': window.location.href,
-        })
-    };
-    // Настройка Gemini
-    CONFIG.providers.gemini = {
-        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
-        models: {
-            architect: 'gemini-2.5-flash', // Актуальная быстрая версия
-            generator: 'gemini-2.5-flash'
-        }
-    };
-} else {
-    alert("Ошибка: app-settings.js не найден!");
-}
+<!-- 2. Хранилище (Логика LocalStorage) -->
+<script src="storage.js"></script> 
 
-<script src="storage.js"></script>
-<script>    
+<!-- 3. Основная логика -->
+<script>
+// --- API КЛИЕНТ (Определен ДО app, чтобы не было ошибок) ---
 const api = {
     detectProvider(key) {
+        // Простой детектор: Gemini ключи начинаются с AIza
         return key.startsWith('AIza') ? 'gemini' : 'openrouter';
     },
 
-    // Парсер, который выживает при ошибках модели
+    // Безопасный парсер JSON (для Xiaomi и других моделей, которые могут вернуть Markdown)
     safeParseJSON(text) {
         try {
             return JSON.parse(text);
         } catch (e) {
-            console.warn("JSON parse fail, trying regex...");
-            // Ищем { ... } или [ ... ]
+            console.warn("Direct JSON parse failed, attempting regex extraction...");
+            // 1. Пробуем найти JSON объект или массив
             const match = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
             if (match) {
                 try { return JSON.parse(match[0]); } catch (e2) {}
             }
-            // Если модель вернула Markdown ```json ... ```
+            // 2. Пробуем найти Markdown блок ```json ... ```
             const mdMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
             if (mdMatch) {
                 try { return JSON.parse(mdMatch[1]); } catch (e3) {}
             }
-            throw new Error("Не удалось извлечь JSON из ответа модели: " + text.substring(0, 50) + "...");
+            throw new Error("API вернул некорректный формат данных (не JSON).");
         }
     },
 
+    // Главный метод вызова
     async call(systemPrompt, userPrompt, schema, modelType, apiKey) {
         const provider = this.detectProvider(apiKey);
-        console.log(`📡 API: ${provider} -> ${modelType}`);
+        console.log(`📡 Sending request via: ${provider.toUpperCase()} (${modelType})`);
 
-        // Для OpenRouter (Xiaomi) отключаем strict mode, он ломает free модели
-        // Для Gemini чистим схему
-        const cleanSchema = this.prepareSchema(schema, provider);
+        // Подготовка схемы (чистка от additionalProperties для Gemini)
+        const cleanSchema = this.prepareSchema(schema);
 
         if (provider === 'gemini') {
             return this.callGemini(systemPrompt, userPrompt, cleanSchema, modelType, apiKey);
@@ -233,14 +218,15 @@ const api = {
         }
     },
 
-    prepareSchema(schema, provider) {
+    prepareSchema(schema) {
+        // Клонируем и разворачиваем json_schema.schema если нужно
         let s = JSON.parse(JSON.stringify(schema));
-        if (s.json_schema && s.json_schema.schema) s = s.json_schema.schema; // Unwrap
+        if (s.json_schema && s.json_schema.schema) s = s.json_schema.schema;
 
-        // Рекурсивная чистка
+        // Рекурсивная очистка
         const clean = (obj) => {
             if (!obj || typeof obj !== 'object') return;
-            // Gemini и Xiaomi Free не любят additionalProperties
+            // Gemini падает если видит additionalProperties
             if ('additionalProperties' in obj) delete obj.additionalProperties;
             if (obj.properties) Object.values(obj.properties).forEach(clean);
             if (obj.items) clean(obj.items);
@@ -259,24 +245,23 @@ const api = {
                 body: JSON.stringify({
                     model: model,
                     messages: [{role: 'system', content: sys}, {role: 'user', content: user}],
-                    // Важно: Xiaomi Free может падать если response_format сложный
-                    // Посылаем его, но если ошибка 400 - пробуем без него в catch?
-                    // Пока шлем как есть, но schema очищена.
-                    response_format: { type: "json_object" }, // Упрощаем до json_object
+                    // Для Xiaomi Free лучше отправлять упрощенный формат или вообще не отправлять,
+                    // если она падает. Здесь оставляем json_object как компромисс.
+                    response_format: { type: "json_object" }, 
                     temperature: 0.7
                 })
             });
             
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.error?.message || 'API Error');
+                throw new Error(err.error?.message || 'OpenRouter API Error');
             }
             
             const data = await res.json();
             return this.safeParseJSON(data.choices[0].message.content);
 
         } catch (e) {
-            console.error("OR Error:", e);
+            console.error("OpenRouter Error:", e);
             throw e;
         }
     },
@@ -285,8 +270,8 @@ const api = {
         const model = CONFIG.providers.gemini.models[type];
         const url = `${CONFIG.providers.gemini.endpoint}${model}:generateContent?key=${key}`;
 
-        // Добавляем инструкцию про JSON в промпт, так надежнее для Gemini
-        const prompt = `${sys}\n\nОТВЕТЬ СТРОГО В FORMAT JSON, СОГЛАСНО СХЕМЕ:\n${JSON.stringify(schema)}\n\nЗАДАЧА: ${user}`;
+        // Gemini лучше слушается, если схему показать еще и в промпте текстом
+        const prompt = `${sys}\n\nОТВЕТЬ СТРОГО В ФОРМАТЕ JSON:\n${JSON.stringify(schema)}\n\nЗАДАЧА ПОЛЬЗОВАТЕЛЯ: ${user}`;
 
         const res = await fetch(url, {
             method: 'POST',
@@ -296,59 +281,62 @@ const api = {
                 generationConfig: {
                     temperature: 0.7,
                     response_mime_type: "application/json"
+                    // response_schema мы не шлем здесь, полагаясь на промпт, 
+                    // так как в бесплатном Flash иногда бывают глюки со схемой
                 }
             })
         });
 
         if (!res.ok) {
             const err = await res.json();
-            throw new Error(err.error?.message || 'Gemini Error');
+            throw new Error(err.error?.message || 'Gemini API Error');
         }
 
         const data = await res.json();
-        return this.safeParseJSON(data.candidates[0].content.parts[0].text);
+        const text = data.candidates[0].content.parts[0].text;
+        return this.safeParseJSON(text);
     }
 };
 
-// --- APP LOGIC ---
+// --- APP LOGIC (Приложение) ---
 const app = {
     state: { step: 0, answers: [], questions: [], blueprint: {}, apiKey: '' },
 
     async start(e) {
         e.preventDefault();
-        this.state.apiKey = document.getElementById('apiKeyInput').value;
+        this.state.apiKey = document.getElementById('apiKeyInput').value.trim();
         const theme = document.getElementById('themeInput').value;
         const count = document.getElementById('qCountInput').value;
 
-        if(!this.state.apiKey) return alert("Нужен ключ!");
+        if(!this.state.apiKey) return alert("Пожалуйста, введите API ключ!");
 
-        this.setLoading(true, "Архитектор планирует тест...");
+        // Сохраняем ключ в сессии для удобства (не в localStorage, для безопасности)
+        sessionStorage.setItem('temp_api_key', this.state.apiKey);
+
+        this.setLoading(true, "🧠 Архитектор проектирует структуру...");
         document.getElementById('errorBox').style.display = 'none';
 
         try {
-            // 1. Blueprint (Архитектура теста)
+            // ЭТАП 1: Создание структуры (Blueprint)
             const blueprint = await api.call(
                 PROMPTS.architect,
-                `Тема: "${theme}". Придумай структуру.`,
+                `Тема: "${theme}". Придумай структуру теста.`,
                 SCHEMAS.blueprint,
                 'architect',
                 this.state.apiKey
             );
             this.state.blueprint = blueprint;
 
-            // 2. Questions (Генерация вопросов)
-            this.setLoading(true, "Генератор пишет вопросы...");
+            // ЭТАП 2: Создание контента (Вопросы)
+            this.setLoading(true, "✍️ Автор пишет вопросы...");
             
-            const genPrompt = `Тема: ${theme}. Тип: ${blueprint.testType}.
-            Результаты: ${JSON.stringify(blueprint.outcomes)}.
-            Сгенерируй ${count} вопросов.
+            const genPrompt = `Тема: ${theme}. Тип теста: ${blueprint.testType}.
+            Возможные результаты: ${JSON.stringify(blueprint.outcomes)}.
+            Нужно сгенерировать ${count} вопросов.
             
             ВАЖНО ПРО ВЕСА:
-            Не делай так, чтобы один вопрос давал баллы только одному результату.
-            Распределяй веса! Если вопрос "Я люблю шум", это:
-            - Шумный персонаж: +1.0
-            - Тихий персонаж: -1.0
-            - Средний персонаж: +0.2`;
+            Используй "Мягкие веса"! Один вопрос должен влиять на несколько результатов.
+            Не делай бинарных (0/1) зависимостей.`;
 
             const content = await api.call(
                 PROMPTS.generator,
@@ -360,15 +348,16 @@ const app = {
             
             this.state.questions = content.questions;
             
-            // Запуск теста
+            // ЗАПУСК
             this.state.step = 0;
             this.state.answers = [];
             this.renderQ();
             this.setView('test');
 
         } catch (err) {
+            console.error(err);
             document.getElementById('errorBox').style.display = 'block';
-            document.getElementById('errorBox').innerText = "Ошибка: " + err.message;
+            document.getElementById('errorBox').innerHTML = `<strong>Ошибка генерации:</strong><br>${err.message}`;
             this.setView('setup');
         }
     },
@@ -388,6 +377,7 @@ const app = {
         this.state.answers[this.state.step] = val;
         document.querySelectorAll('.likert-opt')[val-1].classList.add('selected');
         
+        // Небольшая задержка для анимации выбора
         setTimeout(() => {
             this.state.step++;
             if(this.state.step < this.state.questions.length) {
@@ -395,17 +385,17 @@ const app = {
             } else {
                 this.finish();
             }
-        }, 200);
+        }, 250);
     },
 
     finish() {
-        this.setLoading(true, "Считаем итоги...");
+        this.setLoading(true, "📊 Анализируем ваши ответы...");
         this.setView('loading');
         
         setTimeout(() => {
             this.calc();
             this.setView('results');
-        }, 500);
+        }, 600);
     },
 
     calc() {
@@ -413,7 +403,7 @@ const app = {
         this.state.blueprint.outcomes.forEach(o => scores[o.id] = 0);
 
         this.state.questions.forEach((q, idx) => {
-            const userVal = this.state.answers[idx] - 3; // -2..+2
+            const userVal = this.state.answers[idx] - 3; // Превращаем 1..5 в -2..+2
             q.mapping.forEach(m => {
                 if(scores[m.outcomeId] !== undefined) {
                     scores[m.outcomeId] += (m.weight * userVal);
@@ -421,48 +411,67 @@ const app = {
             });
         });
 
-        // Render Results
+        // Отрисовка результатов
         const container = document.getElementById('resContent');
         let html = '';
         
         if(this.state.blueprint.testType === 'categorical') {
             const sorted = this.state.blueprint.outcomes.sort((a,b) => scores[b.id] - scores[a.id]);
             const win = sorted[0];
-            const max = Math.max(...Object.values(scores), 1); 
+            
+            // Нормализация для бара (чтобы не делить на ноль и красиво отображать)
+            const maxScore = Math.max(...Object.values(scores), 0.1); 
 
-            html = `<div style="text-align:center">
-                <h2>${win.name}</h2>
-                <p>${win.description}</p>
-            </div><hr style="margin:20px 0; border:0; border-top:1px solid #eee">`;
+            html = `<div style="text-align:center; padding-bottom: 20px;">
+                <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#64748b; margin-bottom:10px;">Ваш результат</div>
+                <h2 style="font-size:32px; margin:0 0 10px; color:var(--primary);">${win.name}</h2>
+                <p style="font-size:18px; line-height:1.6;">${win.description}</p>
+            </div>
+            <div style="background:#f1f5f9; padding:20px; border-radius:12px;">
+                <h4 style="margin:0 0 15px; color:#475569;">Другие варианты:</h4>`;
             
             sorted.slice(1).forEach(o => {
                 let pct = 0;
-                if(max > 0) pct = Math.max(0, (scores[o.id] / max) * 100);
+                if (scores[o.id] > 0) pct = (scores[o.id] / maxScore) * 100;
                 
                 html += `<div class="res-item">
-                    <div style="display:flex; justify-content:space-between; font-size:14px;">
+                    <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
                         <span>${o.name}</span>
+                        <span style="color:#94a3b8; font-size:12px;">${Math.round(pct)}%</span>
                     </div>
                     <div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div>
                 </div>`;
             });
+            html += `</div>`;
         } else {
+            // Dimensional
+            html = `<h3 style="text-align:center; margin-bottom:25px;">Ваш Профиль</h3>`;
             this.state.blueprint.outcomes.forEach(o => {
                 const s = scores[o.id];
+                // Шкалы обычно от -10 до +10 (при 5 вопросах), нормализуем в 0..100
                 const pct = Math.min(100, Math.max(0, 50 + (s * 5)));
+                
+                let levelText = "Средний";
+                if(pct > 70) levelText = "Высокий";
+                if(pct < 30) levelText = "Низкий";
+
                 html += `<div class="res-item">
-                    <strong>${o.name}</strong>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <strong>${o.name}</strong>
+                        <span class="badge">${levelText}</span>
+                    </div>
                     <div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div>
-                    <small style="color:#666">${o.description}</small>
+                    <small style="color:#64748b; display:block; margin-top:5px;">${o.description}</small>
                 </div>`;
             });
         }
         container.innerHTML = html;
 
-        // Reset Save Button (важно для перепрохождения)
+        // Разблокируем кнопку сохранения для нового результата
         const saveBtn = document.getElementById('saveTestBtn');
         if (saveBtn) {
             saveBtn.innerHTML = "💾 Сохранить в библиотеку";
+            saveBtn.className = "btn btn-secondary";
             saveBtn.disabled = false;
         }
     },
@@ -479,9 +488,12 @@ const app = {
         }
     },
 
-    // === НОВЫЕ МЕТОДЫ (LIBRARY) ===
+    // === БИБЛИОТЕКА И СОХРАНЕНИЕ ===
 
     openLibrary() {
+        if (typeof Storage === 'undefined') {
+            return alert("Ошибка: файл storage.js не подключен!");
+        }
         const html = Storage.renderLibraryHTML();
         document.getElementById('libraryContent').innerHTML = html;
         this.setView('library');
@@ -494,9 +506,10 @@ const app = {
         const btn = document.getElementById('saveTestBtn');
         if (success) {
             btn.innerHTML = "✅ Сохранено!";
+            btn.className = "btn"; // Делаем синей
             btn.disabled = true;
         } else {
-            alert("Ошибка: этот тест уже есть в библиотеке.");
+            alert("Этот тест уже есть в вашей библиотеке.");
         }
     },
 
@@ -504,10 +517,11 @@ const app = {
         const test = Storage.getById(id);
         if (!test) return alert("Тест не найден!");
 
+        // Восстанавливаем данные
         this.state.blueprint = test.blueprint;
         this.state.questions = test.questions;
         
-        // Перезапуск
+        // Сброс и запуск
         this.state.step = 0;
         this.state.answers = [];
         this.renderQ();
@@ -515,15 +529,16 @@ const app = {
     },
 
     deleteTest(id) {
-        if(confirm("Удалить этот тест из библиотеки?")) {
+        if(confirm("Вы уверены, что хотите удалить этот тест?")) {
             Storage.delete(id);
             this.openLibrary(); // Обновляем список
         }
     }
 };
 
-// Привязываем обработчик формы
+// Запуск обработчика формы
 document.getElementById('setupForm').addEventListener('submit', (e) => app.start(e));
 </script>
+
 </body>
 </html>
