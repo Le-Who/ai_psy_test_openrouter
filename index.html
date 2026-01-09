@@ -300,24 +300,41 @@ const api = {
 
 // --- APP LOGIC (Приложение) ---
 const app = {
-    state: { step: 0, answers: [], questions: [], blueprint: {}, apiKey: '' },
+    // Начальное состояние
+    state: { 
+        step: 0, 
+        answers: [], 
+        questions: [], 
+        blueprint: null, // Было {}, стало null для четкости
+        apiKey: '' 
+    },
 
     async start(e) {
         e.preventDefault();
-        this.state.apiKey = document.getElementById('apiKeyInput').value.trim();
+        
+        // 1. Считываем настройки
+        const keyInput = document.getElementById('apiKeyInput');
+        this.state.apiKey = keyInput ? keyInput.value.trim() : '';
+        
         const theme = document.getElementById('themeInput').value;
         const count = document.getElementById('qCountInput').value;
 
         if(!this.state.apiKey) return alert("Пожалуйста, введите API ключ!");
 
-        // Сохраняем ключ в сессии для удобства (не в localStorage, для безопасности)
+        // 2. ОЧИСТКА СОСТОЯНИЯ (Важно при смене ключей/тестов)
+        this.state.blueprint = null;
+        this.state.questions = [];
+        this.state.answers = [];
+        this.state.step = 0;
+
+        // Сохраняем ключ в сессии
         sessionStorage.setItem('temp_api_key', this.state.apiKey);
 
         this.setLoading(true, "🧠 Архитектор проектирует структуру...");
         document.getElementById('errorBox').style.display = 'none';
 
         try {
-            // ЭТАП 1: Создание структуры (Blueprint)
+            // ЭТАП 1: Blueprint
             const blueprint = await api.call(
                 PROMPTS.architect,
                 `Тема: "${theme}". Придумай структуру теста.`,
@@ -325,9 +342,14 @@ const app = {
                 'architect',
                 this.state.apiKey
             );
+            
+            // Проверка, что нам вернули
+            if (!blueprint || !blueprint.outcomes) {
+                throw new Error("Архитектор вернул некорректные данные (нет outcomes).");
+            }
             this.state.blueprint = blueprint;
 
-            // ЭТАП 2: Создание контента (Вопросы)
+            // ЭТАП 2: Вопросы
             this.setLoading(true, "✍️ Автор пишет вопросы...");
             
             const genPrompt = `Тема: ${theme}. Тип теста: ${blueprint.testType}.
@@ -346,11 +368,12 @@ const app = {
                 this.state.apiKey
             );
             
+            if (!content || !content.questions) {
+                throw new Error("Генератор не вернул вопросы.");
+            }
             this.state.questions = content.questions;
             
             // ЗАПУСК
-            this.state.step = 0;
-            this.state.answers = [];
             this.renderQ();
             this.setView('test');
 
@@ -377,7 +400,6 @@ const app = {
         this.state.answers[this.state.step] = val;
         document.querySelectorAll('.likert-opt')[val-1].classList.add('selected');
         
-        // Небольшая задержка для анимации выбора
         setTimeout(() => {
             this.state.step++;
             if(this.state.step < this.state.questions.length) {
@@ -392,35 +414,57 @@ const app = {
         this.setLoading(true, "📊 Анализируем ваши ответы...");
         this.setView('loading');
         
+        // Даем UI время на обновление перед тяжелыми вычислениями
         setTimeout(() => {
-            this.calc();
-            this.setView('results');
+            try {
+                this.calc();
+                this.setView('results');
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка при расчете результатов: " + e.message);
+                this.setView('setup'); // Возвращаем в меню при ошибке
+            }
         }, 600);
     },
 
     calc() {
+        // --- ЗАЩИТА: Проверяем данные перед чтением ---
+        if (!this.state.blueprint || !this.state.blueprint.outcomes) {
+            console.error("Critical: Blueprint state is broken", this.state.blueprint);
+            throw new Error("Данные о структуре теста отсутствуют.");
+        }
+        
         const scores = {};
+        // Вот здесь была ошибка .forEach undefined
         this.state.blueprint.outcomes.forEach(o => scores[o.id] = 0);
 
         this.state.questions.forEach((q, idx) => {
-            const userVal = this.state.answers[idx] - 3; // Превращаем 1..5 в -2..+2
-            q.mapping.forEach(m => {
-                if(scores[m.outcomeId] !== undefined) {
-                    scores[m.outcomeId] += (m.weight * userVal);
-                }
-            });
+            const ans = this.state.answers[idx];
+            // Защита: если ответа нет, считаем нейтральным (3)
+            const userVal = (ans !== undefined ? ans : 3) - 3; 
+            
+            if (q.mapping && Array.isArray(q.mapping)) {
+                q.mapping.forEach(m => {
+                    if(scores[m.outcomeId] !== undefined) {
+                        scores[m.outcomeId] += (m.weight * userVal);
+                    }
+                });
+            }
         });
 
-        // Отрисовка результатов
+        // Отрисовка
         const container = document.getElementById('resContent');
         let html = '';
         
-        if(this.state.blueprint.testType === 'categorical') {
+        // Определяем тип теста (если поле потерялось, считаем categorical по умолчанию)
+        const isCategorical = (this.state.blueprint.testType !== 'dimensional');
+        
+        if(isCategorical) {
             const sorted = this.state.blueprint.outcomes.sort((a,b) => scores[b.id] - scores[a.id]);
             const win = sorted[0];
             
-            // Нормализация для бара (чтобы не делить на ноль и красиво отображать)
-            const maxScore = Math.max(...Object.values(scores), 0.1); 
+            let maxScore = Math.max(...Object.values(scores));
+            if (maxScore <= 0) maxScore = 1; 
 
             html = `<div style="text-align:center; padding-bottom: 20px;">
                 <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#64748b; margin-bottom:10px;">Ваш результат</div>
@@ -448,7 +492,6 @@ const app = {
             html = `<h3 style="text-align:center; margin-bottom:25px;">Ваш Профиль</h3>`;
             this.state.blueprint.outcomes.forEach(o => {
                 const s = scores[o.id];
-                // Шкалы обычно от -10 до +10 (при 5 вопросах), нормализуем в 0..100
                 const pct = Math.min(100, Math.max(0, 50 + (s * 5)));
                 
                 let levelText = "Средний";
@@ -467,7 +510,7 @@ const app = {
         }
         container.innerHTML = html;
 
-        // Разблокируем кнопку сохранения для нового результата
+        // Кнопка сохранения
         const saveBtn = document.getElementById('saveTestBtn');
         if (saveBtn) {
             saveBtn.innerHTML = "💾 Сохранить в библиотеку";
