@@ -334,18 +334,34 @@ const app = {
         document.getElementById('errorBox').style.display = 'none';
 
         try {
-            // ЭТАП 1: Blueprint
-            const blueprint = await api.call(
-                PROMPTS.architect,
-                `Тема: "${theme}". Придумай структуру теста.`,
-                SCHEMAS.blueprint,
-                'architect',
-                this.state.apiKey
-            );
+            // ЭТАП 1: Blueprint (с авто-повтором для слабых моделей)
+            let attempts = 0;
+            let blueprint = null;
             
-            // Проверка, что нам вернули
+            while(attempts < 3 && !blueprint) {
+                try {
+                    attempts++;
+                    console.log(`Attempt ${attempts} to generate blueprint...`);
+                    
+                    const res = await api.call(
+                        PROMPTS.architect,
+                        `Тема: "${theme}". Придумай структуру. ОТВЕТЬ ТОЛЬКО В JSON.`, // Усилили требование
+                        SCHEMAS.blueprint,
+                        'architect',
+                        this.state.apiKey
+                    );
+                    
+                    if (res && res.outcomes) {
+                        blueprint = res;
+                    }
+                } catch (e) {
+                    console.warn(`Attempt ${attempts} failed:`, e);
+                    if (attempts === 3) throw e; // Если 3 раза не вышло, сдаемся
+                }
+            }
+
             if (!blueprint || !blueprint.outcomes) {
-                throw new Error("Архитектор вернул некорректные данные (нет outcomes).");
+                throw new Error("Модель не смогла создать структуру теста за 3 попытки. Попробуйте другую тему.");
             }
             this.state.blueprint = blueprint;
 
