@@ -75,7 +75,7 @@
         <!-- Конец вставки 1 -->
 
         <div class="card">
-            <h2 style="margin-top: 0;">Создать новый тест</h2>
+             <h2 style="margin-top: 0;">Создать новый тест</h2>
             <p style="color: var(--color-text-secondary); margin-bottom: 24px;">
                 Система автоматически выберет провайдера (OpenRouter или Gemini) в зависимости от вашего ключа.
             </p>
@@ -145,12 +145,20 @@
         </div>
     </div>
 
-    <!-- RESULTS -->
+    <!-- VIEW: RESULTS -->
     <div id="resultsView" class="view">
-        <div class="card" id="resContent"></div>
-        <button class="btn" onclick="location.reload()">Создать новый</button>
+        <div class="card" id="resultsContent"></div>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <!-- Кнопка начать заново -->
+            <button class="btn" onclick="location.reload()" style="flex: 1;">Создать новый</button>
+            
+            <!-- КНОПКА СОХРАНЕНИЯ (Новая) -->
+            <button class="btn btn-secondary" id="saveTestBtn" onclick="app.saveCurrentTest()" style="flex: 1;">
+                💾 Сохранить в библиотеку
+            </button>
+        </div>
     </div>
-</div>
 
 <script src="app-settings.js"></script>
 <script>
@@ -300,6 +308,9 @@ const api = {
     }
 };
 
+<script src="storage.js"></script>
+
+<script>
 // --- APP LOGIC ---
 const app = {
     state: { step: 0, answers: [], questions: [], blueprint: {}, apiKey: '' },
@@ -316,7 +327,7 @@ const app = {
         document.getElementById('errorBox').style.display = 'none';
 
         try {
-            // 1. Blueprint
+            // 1. Blueprint (Архитектура теста)
             const blueprint = await api.call(
                 PROMPTS.architect,
                 `Тема: "${theme}". Придумай структуру.`,
@@ -326,10 +337,9 @@ const app = {
             );
             this.state.blueprint = blueprint;
 
-            // 2. Questions
+            // 2. Questions (Генерация вопросов)
             this.setLoading(true, "Генератор пишет вопросы...");
             
-            // Хак для Gemini/Xiaomi: явно просим размазывать веса
             const genPrompt = `Тема: ${theme}. Тип: ${blueprint.testType}.
             Результаты: ${JSON.stringify(blueprint.outcomes)}.
             Сгенерируй ${count} вопросов.
@@ -351,7 +361,7 @@ const app = {
             
             this.state.questions = content.questions;
             
-            // Run
+            // Запуск теста
             this.state.step = 0;
             this.state.answers = [];
             this.renderQ();
@@ -412,14 +422,14 @@ const app = {
             });
         });
 
-        // Render
+        // Render Results
         const container = document.getElementById('resContent');
         let html = '';
         
         if(this.state.blueprint.testType === 'categorical') {
             const sorted = this.state.blueprint.outcomes.sort((a,b) => scores[b.id] - scores[a.id]);
             const win = sorted[0];
-            const max = Math.max(...Object.values(scores), 1); // Avoid div/0
+            const max = Math.max(...Object.values(scores), 1); 
 
             html = `<div style="text-align:center">
                 <h2>${win.name}</h2>
@@ -427,7 +437,6 @@ const app = {
             </div><hr style="margin:20px 0; border:0; border-top:1px solid #eee">`;
             
             sorted.slice(1).forEach(o => {
-                // Если max < 0 (все минуса), формула ломается, берем Math.abs или просто 0
                 let pct = 0;
                 if(max > 0) pct = Math.max(0, (scores[o.id] / max) * 100);
                 
@@ -441,7 +450,6 @@ const app = {
         } else {
             this.state.blueprint.outcomes.forEach(o => {
                 const s = scores[o.id];
-                // Шкалы: -10..+10 -> 0..100
                 const pct = Math.min(100, Math.max(0, 50 + (s * 5)));
                 html += `<div class="res-item">
                     <strong>${o.name}</strong>
@@ -451,6 +459,13 @@ const app = {
             });
         }
         container.innerHTML = html;
+
+        // Reset Save Button (важно для перепрохождения)
+        const saveBtn = document.getElementById('saveTestBtn');
+        if (saveBtn) {
+            saveBtn.innerHTML = "💾 Сохранить в библиотеку";
+            saveBtn.disabled = false;
+        }
     },
 
     setView(id) {
@@ -463,11 +478,53 @@ const app = {
             this.setView('loading');
             document.getElementById('loadTitle').innerText = msg;
         }
+    },
+
+    // === НОВЫЕ МЕТОДЫ (LIBRARY) ===
+
+    openLibrary() {
+        const html = Storage.renderLibraryHTML();
+        document.getElementById('libraryContent').innerHTML = html;
+        this.setView('library');
+    },
+
+    saveCurrentTest() {
+        const themeName = document.getElementById('themeInput').value || "Без названия";
+        const success = Storage.save(this.state.blueprint, this.state.questions, themeName);
+        
+        const btn = document.getElementById('saveTestBtn');
+        if (success) {
+            btn.innerHTML = "✅ Сохранено!";
+            btn.disabled = true;
+        } else {
+            alert("Ошибка: этот тест уже есть в библиотеке.");
+        }
+    },
+
+    loadSavedTest(id) {
+        const test = Storage.getById(id);
+        if (!test) return alert("Тест не найден!");
+
+        this.state.blueprint = test.blueprint;
+        this.state.questions = test.questions;
+        
+        // Перезапуск
+        this.state.step = 0;
+        this.state.answers = [];
+        this.renderQ();
+        this.setView('test');
+    },
+
+    deleteTest(id) {
+        if(confirm("Удалить этот тест из библиотеки?")) {
+            Storage.delete(id);
+            this.openLibrary(); // Обновляем список
+        }
     }
 };
 
+// Привязываем обработчик формы
 document.getElementById('setupForm').addEventListener('submit', (e) => app.start(e));
 </script>
-<script src="storage.js"></script> 
 </body>
 </html>
