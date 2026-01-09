@@ -247,7 +247,7 @@ const api = {
                     messages: [{role: 'system', content: sys}, {role: 'user', content: user}],
                     // Для Xiaomi Free лучше отправлять упрощенный формат или вообще не отправлять,
                     // если она падает. Здесь оставляем json_object как компромисс.
-                    response_format: { type: "json_object" }, 
+                    response_format: { type: "json_schema" }, 
                     temperature: 0.7
                 })
             });
