@@ -191,6 +191,8 @@ if (typeof CONFIG !== 'undefined') {
     alert("Ошибка: app-settings.js не найден!");
 }
 
+<script src="storage.js"></script>
+<script>    
 const api = {
     detectProvider(key) {
         return key.startsWith('AIza') ? 'gemini' : 'openrouter';
@@ -308,9 +310,6 @@ const api = {
     }
 };
 
-<script src="storage.js"></script>
-
-<script>
 // --- APP LOGIC ---
 const app = {
     state: { step: 0, answers: [], questions: [], blueprint: {}, apiKey: '' },
