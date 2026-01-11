@@ -104,6 +104,10 @@ const app = {
         const theme = document.getElementById('themeInput').value;
         const count = document.getElementById('qCountInput').value;
         const audience = document.getElementById('audienceInput').value;
+        
+        // 1. Считываем пожелания
+        const notes = document.getElementById('notesInput').value.trim();
+        const notesText = notes ? `ОСОБЫЕ ПОЖЕЛАНИЯ ЗАКАЗЧИКА: "${notes}".` : "";
 
         if(!this.state.apiKey) return alert("Введите API ключ!");
         sessionStorage.setItem('temp_api_key', this.state.apiKey);
@@ -113,6 +117,9 @@ const app = {
 
         try {
             // Step 1: Blueprint
+            // Внедряем notesText в промпт архитектора
+            const architectPrompt = `Тема: "${theme}". Аудитория: "${audience}". ${notesText} Создай структуру теста.`;
+
             let attempts = 0;
             let blueprint = null;
             while(attempts < 3 && !blueprint) {
@@ -120,7 +127,7 @@ const app = {
                     attempts++;
                     const res = await api.call(
                         'architect',
-                        `Тема: "${theme}". Аудитория: "${audience}". Создай структуру теста.`,
+                        architectPrompt, // <-- Используем обновленный промпт
                         SCHEMAS.blueprint,
                         this.state.apiKey
                     );
@@ -133,7 +140,15 @@ const app = {
 
             // Step 2: Questions
             this.setLoading(true, "✍️ Автор пишет вопросы...");
-            const genPrompt = `Тема: ${theme}. Тип: ${blueprint.testType}. Результаты: ${JSON.stringify(blueprint.outcomes)}. Кол-во вопросов: ${count}. Распредели веса (Soft Weights).`;
+            
+            // Внедряем notesText в промпт генератора вопросов
+            // Это самое важное место для твоего кейса с Гарри Поттером
+            const genPrompt = `Тема: ${theme}. 
+            Тип: ${blueprint.testType}. 
+            Результаты: ${JSON.stringify(blueprint.outcomes)}. 
+            Кол-во вопросов: ${count}. 
+            ${notesText} (ОБЯЗАТЕЛЬНО УЧТИ ЭТО В ТЕКСТЕ ВОПРОСОВ).
+            Распредели веса (Soft Weights).`;
 
             const content = await api.call('generator', genPrompt, SCHEMAS.questions, this.state.apiKey);
             this.state.questions = content.questions;
