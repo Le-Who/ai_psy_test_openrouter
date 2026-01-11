@@ -71,7 +71,7 @@
 <div class="container">
     <div class="header">
         <h1>🔮 Генератор Тестов имени Дуни Пахучей</h1>
-        <p>Работает на хлопьях с молоком</p>
+        <p>Работает на хлопьях с молоком 💅</p>
     </div>
 
     <div id="errorBox" style="background:#fef2f2; color:#991b1b; padding:15px; border-radius:8px; display:none; margin-bottom:20px; border:1px solid #fecaca;"></div>
@@ -97,10 +97,10 @@
                         <label>Вопросов</label>
                         <select id="qCountInput">
                             <option value="5">5 (Зачем?)</option>
-                            <option value="10">10 (Быстрый)</option>
+                            <option value="10" selected>10 (Быстрый)</option>
                             <option value="15">15 (Обычный)</option>
                             <option value="25">25 (Подробный)</option>
-                            <option value="69">69 (Вирт?)</option>
+                            <option value="69">69 (Тумач?)</option>
                         </select>
                     </div>
                     <div>
@@ -169,99 +169,81 @@
 </div>
 
 <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
-<!-- 1. Настройки (Промпты, Схемы, Конфиг моделей) -->
 <script src="app-settings.js"></script>
-<!-- 2. Хранилище (Логика LocalStorage) -->
 <script src="storage.js"></script> 
 
-<!-- 3. Основная логика -->
 <script>
-// --- API КЛИЕНТ (Определен ДО app, чтобы не было ошибок) ---
+// --- API КЛИЕНТ (v3.0 Updated) ---
 const api = {
     detectProvider(key) {
-        // Простой детектор: Gemini ключи начинаются с AIza
         return key.startsWith('AIza') ? 'gemini' : 'openrouter';
     },
 
-    // Безопасный парсер JSON (для Xiaomi и других моделей, которые могут вернуть Markdown)
     safeParseJSON(text) {
         try {
             return JSON.parse(text);
         } catch (e) {
-            console.warn("Direct JSON parse failed, attempting regex extraction...");
-            // 1. Пробуем найти JSON объект или массив
+            console.warn("Parsing failed, attempting regex extraction...");
             const match = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
             if (match) {
                 try { return JSON.parse(match[0]); } catch (e2) {}
             }
-            // 2. Пробуем найти Markdown блок ```json ... ```
             const mdMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
             if (mdMatch) {
                 try { return JSON.parse(mdMatch[1]); } catch (e3) {}
             }
-            throw new Error("API вернул некорректный формат данных (не JSON).");
+            throw new Error("Не удалось извлечь JSON из ответа.");
         }
     },
 
-    // Главный метод вызова
-    async call(systemPrompt, userPrompt, schema, modelType, apiKey) {
+    async call(taskName, userPrompt, schema, apiKey) {
         const provider = this.detectProvider(apiKey);
-        console.log(`📡 Sending request via: ${provider.toUpperCase()} (${modelType})`);
+        
+        // ВАЖНО: Выбор правильного промпта для провайдера
+        const systemPrompt = PROMPTS[provider][taskName];
 
-        // Подготовка схемы (чистка от additionalProperties для Gemini)
-        const cleanSchema = this.prepareSchema(schema);
+        console.log(`📡 API Request: ${provider.toUpperCase()} (${taskName})`);
 
         if (provider === 'gemini') {
-            return this.callGemini(systemPrompt, userPrompt, cleanSchema, modelType, apiKey);
+            return this.callGemini(systemPrompt, userPrompt, schema, taskName, apiKey);
         } else {
-            return this.callOpenRouter(systemPrompt, userPrompt, cleanSchema, modelType, apiKey);
+            return this.callOpenRouter(systemPrompt, userPrompt, schema, taskName, apiKey);
         }
-    },
-
-    prepareSchema(schema) {
-        // Клонируем и разворачиваем json_schema.schema если нужно
-        let s = JSON.parse(JSON.stringify(schema));
-        if (s.json_schema && s.json_schema.schema) s = s.json_schema.schema;
-
-        // Рекурсивная очистка
-        const clean = (obj) => {
-            if (!obj || typeof obj !== 'object') return;
-            // Gemini падает если видит additionalProperties
-            if ('additionalProperties' in obj) delete obj.additionalProperties;
-            if (obj.properties) Object.values(obj.properties).forEach(clean);
-            if (obj.items) clean(obj.items);
-        };
-        clean(s);
-        return s;
     },
 
     async callOpenRouter(sys, user, schema, type, key) {
         const model = CONFIG.providers.openrouter.models[type];
         
+        // Для OpenRouter (Xiaomi) мы полагаемся на пример в System Prompt
+        const messages = [
+            { role: 'system', content: sys },
+            { role: 'user', content: user }
+        ];
+
         try {
             const res = await fetch(CONFIG.providers.openrouter.endpoint, {
                 method: 'POST',
                 headers: CONFIG.providers.openrouter.headers(key),
                 body: JSON.stringify({
                     model: model,
-                    messages: [{role: 'system', content: sys}, {role: 'user', content: user}],
-                    // Для Xiaomi Free лучше отправлять упрощенный формат или вообще не отправлять,
-                    // если она падает. Здесь оставляем json_object как компромисс.
+                    messages: messages,
+                    // Включаем JSON mode
                     response_format: { type: "json_object" }, 
-                    temperature: 0.7
+                    temperature: 0.6
                 })
             });
             
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.error?.message || 'OpenRouter API Error');
+                throw new Error(err.error?.message || 'OpenRouter Error');
             }
             
             const data = await res.json();
-            return this.safeParseJSON(data.choices[0].message.content);
+            const content = data.choices[0].message.content;
+            return this.safeParseJSON(content);
 
         } catch (e) {
-            console.error("OpenRouter Error:", e);
+            console.error("OpenRouter request failed:", e);
             throw e;
         }
     },
@@ -270,8 +252,8 @@ const api = {
         const model = CONFIG.providers.gemini.models[type];
         const url = `${CONFIG.providers.gemini.endpoint}${model}:generateContent?key=${key}`;
 
-        // Gemini лучше слушается, если схему показать еще и в промпте текстом
-        const prompt = `${sys}\n\nОТВЕТЬ СТРОГО В ФОРМАТЕ JSON:\n${JSON.stringify(schema)}\n\nЗАДАЧА ПОЛЬЗОВАТЕЛЯ: ${user}`;
+        // Gemini: добавляем схему в конец промпта
+        const prompt = `${sys}\n\nОТВЕТЬ СТРОГО В FORMAT JSON:\n${JSON.stringify(schema)}\n\nЗАДАЧА: ${user}`;
 
         const res = await fetch(url, {
             method: 'POST',
@@ -281,122 +263,91 @@ const api = {
                 generationConfig: {
                     temperature: 0.7,
                     response_mime_type: "application/json"
-                    // response_schema мы не шлем здесь, полагаясь на промпт, 
-                    // так как в бесплатном Flash иногда бывают глюки со схемой
                 }
             })
         });
 
         if (!res.ok) {
             const err = await res.json();
-            throw new Error(err.error?.message || 'Gemini API Error');
+            throw new Error(err.error?.message || 'Gemini Error');
         }
 
         const data = await res.json();
-        const text = data.candidates[0].content.parts[0].text;
-        return this.safeParseJSON(text);
+        return this.safeParseJSON(data.candidates[0].content.parts[0].text);
     }
 };
 
-// --- APP LOGIC (Приложение) ---
+// --- APP LOGIC (v3.0 Final) ---
 const app = {
-    // Начальное состояние
-    state: { 
-        step: 0, 
-        answers: [], 
-        questions: [], 
-        blueprint: null, // Было {}, стало null для четкости
-        apiKey: '' 
-    },
+    state: { step: 0, answers: [], questions: [], blueprint: null, apiKey: '' },
 
     async start(e) {
         e.preventDefault();
         
-        // 1. Считываем настройки
-        const keyInput = document.getElementById('apiKeyInput');
-        this.state.apiKey = keyInput ? keyInput.value.trim() : '';
-        
-        const theme = document.getElementById('themeInput').value;
-        const count = document.getElementById('qCountInput').value;
-
-        if(!this.state.apiKey) return alert("Пожалуйста, введите API ключ!");
-
-        // 2. ОЧИСТКА СОСТОЯНИЯ (Важно при смене ключей/тестов)
+        // 1. Очистка состояния (Critical fix)
         this.state.blueprint = null;
         this.state.questions = [];
         this.state.answers = [];
         this.state.step = 0;
 
-        // Сохраняем ключ в сессии
+        this.state.apiKey = document.getElementById('apiKeyInput').value.trim();
+        const theme = document.getElementById('themeInput').value;
+        const count = document.getElementById('qCountInput').value;
+        const audience = document.getElementById('audienceInput').value;
+
+        if(!this.state.apiKey) return alert("Введите API ключ!");
         sessionStorage.setItem('temp_api_key', this.state.apiKey);
 
-        this.setLoading(true, "🧠 Архитектор проектирует структуру...");
+        this.setLoading(true, "🧠 Архитектор проектирует тест...");
         document.getElementById('errorBox').style.display = 'none';
 
         try {
-            // ЭТАП 1: Blueprint (с авто-повтором для слабых моделей)
+            // ЭТАП 1: Blueprint (с повторами для стабильности)
             let attempts = 0;
             let blueprint = null;
             
             while(attempts < 3 && !blueprint) {
                 try {
                     attempts++;
-                    console.log(`Attempt ${attempts} to generate blueprint...`);
-                    
                     const res = await api.call(
-                        PROMPTS.architect,
-                        `Тема: "${theme}". Придумай структуру. ОТВЕТЬ ТОЛЬКО В JSON.`, // Усилили требование
-                        SCHEMAS.blueprint,
                         'architect',
+                        `Тема: "${theme}". Аудитория: "${audience}". Создай структуру теста.`,
+                        SCHEMAS.blueprint,
                         this.state.apiKey
                     );
-                    
-                    if (res && res.outcomes) {
-                        blueprint = res;
-                    }
+                    if (res && res.outcomes) blueprint = res;
                 } catch (e) {
-                    console.warn(`Attempt ${attempts} failed:`, e);
-                    if (attempts === 3) throw e; // Если 3 раза не вышло, сдаемся
+                    console.warn(`Blueprint attempt ${attempts} failed:`, e);
+                    if (attempts === 3) throw e;
                 }
-            }
-
-            if (!blueprint || !blueprint.outcomes) {
-                throw new Error("Модель не смогла создать структуру теста за 3 попытки. Попробуйте другую тему.");
             }
             this.state.blueprint = blueprint;
 
             // ЭТАП 2: Вопросы
             this.setLoading(true, "✍️ Автор пишет вопросы...");
             
-            const genPrompt = `Тема: ${theme}. Тип теста: ${blueprint.testType}.
-            Возможные результаты: ${JSON.stringify(blueprint.outcomes)}.
-            Нужно сгенерировать ${count} вопросов.
-            
-            ВАЖНО ПРО ВЕСА:
-            Используй "Мягкие веса"! Один вопрос должен влиять на несколько результатов.
-            Не делай бинарных (0/1) зависимостей.`;
+            const genPrompt = `Тема: ${theme}. Тип: ${blueprint.testType}.
+            Результаты: ${JSON.stringify(blueprint.outcomes)}.
+            Количество вопросов: ${count}.
+            Распредели веса равномерно (Soft Weights).`;
 
             const content = await api.call(
-                PROMPTS.generator,
+                'generator',
                 genPrompt,
                 SCHEMAS.questions,
-                'generator',
                 this.state.apiKey
             );
             
-            if (!content || !content.questions) {
-                throw new Error("Генератор не вернул вопросы.");
-            }
             this.state.questions = content.questions;
             
-            // ЗАПУСК
+            // Старт
             this.renderQ();
             this.setView('test');
 
         } catch (err) {
             console.error(err);
             document.getElementById('errorBox').style.display = 'block';
-            document.getElementById('errorBox').innerHTML = `<strong>Ошибка генерации:</strong><br>${err.message}`;
+            document.getElementById('errorBox').innerHTML = `<strong>Ошибка:</strong> ${err.message}`;
             this.setView('setup');
         }
     },
@@ -423,41 +374,35 @@ const app = {
             } else {
                 this.finish();
             }
-        }, 250);
+        }, 200);
     },
 
     finish() {
-        this.setLoading(true, "📊 Анализируем ваши ответы...");
+        this.setLoading(true, "📊 Дуня Пахучая считает...");
         this.setView('loading');
         
-        // Даем UI время на обновление перед тяжелыми вычислениями
         setTimeout(() => {
             try {
                 this.calc();
                 this.setView('results');
             } catch (e) {
-                console.error(e);
-                alert("Ошибка при расчете результатов: " + e.message);
-                this.setView('setup'); // Возвращаем в меню при ошибке
+                alert("Ошибка расчета: " + e.message);
+                this.setView('setup');
             }
         }, 600);
     },
 
     calc() {
-        // --- ЗАЩИТА: Проверяем данные перед чтением ---
         if (!this.state.blueprint || !this.state.blueprint.outcomes) {
-            console.error("Critical: Blueprint state is broken", this.state.blueprint);
-            throw new Error("Данные о структуре теста отсутствуют.");
+            throw new Error("Нет данных о результатах теста.");
         }
         
         const scores = {};
-        // Вот здесь была ошибка .forEach undefined
         this.state.blueprint.outcomes.forEach(o => scores[o.id] = 0);
 
         this.state.questions.forEach((q, idx) => {
             const ans = this.state.answers[idx];
-            // Защита: если ответа нет, считаем нейтральным (3)
-            const userVal = (ans !== undefined ? ans : 3) - 3; 
+            const userVal = (ans !== undefined ? ans : 3) - 3; // -2..+2
             
             if (q.mapping && Array.isArray(q.mapping)) {
                 q.mapping.forEach(m => {
@@ -471,19 +416,15 @@ const app = {
         // Отрисовка
         const container = document.getElementById('resContent');
         let html = '';
-        
-        // Определяем тип теста (если поле потерялось, считаем categorical по умолчанию)
         const isCategorical = (this.state.blueprint.testType !== 'dimensional');
         
         if(isCategorical) {
             const sorted = this.state.blueprint.outcomes.sort((a,b) => scores[b.id] - scores[a.id]);
             const win = sorted[0];
-            
-            let maxScore = Math.max(...Object.values(scores));
-            if (maxScore <= 0) maxScore = 1; 
+            let maxScore = Math.max(...Object.values(scores), 1); 
 
             html = `<div style="text-align:center; padding-bottom: 20px;">
-                <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#64748b; margin-bottom:10px;">Ваш результат</div>
+                <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#64748b; margin-bottom:10px;">Твой результат</div>
                 <h2 style="font-size:32px; margin:0 0 10px; color:var(--primary);">${win.name}</h2>
                 <p style="font-size:18px; line-height:1.6;">${win.description}</p>
             </div>
@@ -504,15 +445,11 @@ const app = {
             });
             html += `</div>`;
         } else {
-            // Dimensional
-            html = `<h3 style="text-align:center; margin-bottom:25px;">Ваш Профиль</h3>`;
+            html = `<h3 style="text-align:center; margin-bottom:25px;">Твой Профиль</h3>`;
             this.state.blueprint.outcomes.forEach(o => {
                 const s = scores[o.id];
                 const pct = Math.min(100, Math.max(0, 50 + (s * 5)));
-                
-                let levelText = "Средний";
-                if(pct > 70) levelText = "Высокий";
-                if(pct < 30) levelText = "Низкий";
+                let levelText = pct > 70 ? "Высокий" : pct < 30 ? "Низкий" : "Средний";
 
                 html += `<div class="res-item">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
@@ -526,11 +463,9 @@ const app = {
         }
         container.innerHTML = html;
 
-        // Кнопка сохранения
         const saveBtn = document.getElementById('saveTestBtn');
         if (saveBtn) {
-            saveBtn.innerHTML = "💾 Сохранить в библиотеку";
-            saveBtn.className = "btn btn-secondary";
+            saveBtn.innerText = "💾 Сохранить в библиотеку";
             saveBtn.disabled = false;
         }
     },
@@ -547,12 +482,8 @@ const app = {
         }
     },
 
-    // === БИБЛИОТЕКА И СОХРАНЕНИЕ ===
-
     openLibrary() {
-        if (typeof Storage === 'undefined') {
-            return alert("Ошибка: файл storage.js не подключен!");
-        }
+        if (typeof Storage === 'undefined') return alert("Модуль хранилища не загружен!");
         const html = Storage.renderLibraryHTML();
         document.getElementById('libraryContent').innerHTML = html;
         this.setView('library');
@@ -561,26 +492,18 @@ const app = {
     saveCurrentTest() {
         const themeName = document.getElementById('themeInput').value || "Без названия";
         const success = Storage.save(this.state.blueprint, this.state.questions, themeName);
-        
         const btn = document.getElementById('saveTestBtn');
         if (success) {
-            btn.innerHTML = "✅ Сохранено!";
-            btn.className = "btn"; // Делаем синей
+            btn.innerText = "✅ Сохранено!";
             btn.disabled = true;
-        } else {
-            alert("Этот тест уже есть в вашей библиотеке.");
-        }
+        } else alert("Этот тест уже есть в вашей библиотеке.");
     },
 
     loadSavedTest(id) {
         const test = Storage.getById(id);
         if (!test) return alert("Тест не найден!");
-
-        // Восстанавливаем данные
         this.state.blueprint = test.blueprint;
         this.state.questions = test.questions;
-        
-        // Сброс и запуск
         this.state.step = 0;
         this.state.answers = [];
         this.renderQ();
@@ -588,14 +511,13 @@ const app = {
     },
 
     deleteTest(id) {
-        if(confirm("Вы уверены, что хотите удалить этот тест?")) {
+        if(confirm("Удалить?")) {
             Storage.delete(id);
-            this.openLibrary(); // Обновляем список
+            this.openLibrary();
         }
     }
 };
 
-// Запуск обработчика формы
 document.getElementById('setupForm').addEventListener('submit', (e) => app.start(e));
 </script>
 
