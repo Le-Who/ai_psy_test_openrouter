@@ -13,7 +13,7 @@
     <!-- НАЧАЛО БЛОКА ХЕДЕРА С ТЕМАМИ -->
     <div class="header-row">
         <div class="header-content">
-            <h1>🔮 <span class="header-title-text">Генератор Тестов им. Дуни Пахучей 💅</span></h1>
+            <h1>🔮 <span class="header-title-text">Генератор Тестов им. Дуни Пахучей</span> 💅</h1>
             <p>Работает на хлопьях с молоком 🥣</p>
         </div>
 
@@ -434,12 +434,12 @@ const app = {
             let maxScore = Math.max(...Object.values(scores), 1); 
 
             html = `<div style="text-align:center; padding-bottom: 20px;">
-                <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#64748b; margin-bottom:10px;">Твой результат</div>
+                <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">Твой результат</div>
                 <h2 style="font-size:32px; margin:0 0 10px; color:var(--primary);">${win.name}</h2>
                 <p style="font-size:18px; line-height:1.6;">${win.description}</p>
             </div>
-            <div style="background:#f1f5f9; padding:20px; border-radius:12px;">
-                <h4 style="margin:0 0 15px; color:#475569;">Другие варианты:</h4>`;
+            <div class="results-secondary-block"> <!-- ИСПОЛЬЗУЕМ КЛАСС -->
+                <h4 class="results-secondary-title">Другие варианты:</h4>`;
             
             sorted.slice(1).forEach(o => {
                 let pct = 0;
