@@ -252,51 +252,106 @@ const app = {
         let html = '';
 
         if (this.state.mode === 'quiz') {
-            // --- QUIZ CALC ---
+            // --- 1. ЛОГИКА ВИКТОРИНЫ (QUIZ) ---
             const score = this.state.quizScore;
             const total = this.state.questions.length;
             
-            // Find tier based on min/max
-            // Fallback to first outcome if logic fails
-            let result = outcomes.find(o => score >= o.minScore && score <= o.maxScore) || outcomes[0];
+            // Ищем подходящий грейд (результат) по диапазону очков
+            // Если вдруг логика диапазонов нарушена, берем самый первый или последний
+            let result = outcomes.find(o => score >= o.minScore && score <= o.maxScore) 
+                         || (score === 0 ? outcomes[0] : outcomes[outcomes.length - 1]);
 
             html = `<div style="text-align:center;">
-                <div style="font-size:14px; color:var(--text-muted); margin-bottom:10px;">ТВОЙ РЕЗУЛЬТАТ</div>
-                <h1 style="font-size:48px; margin:0; color:var(--primary);">${score} / ${total}</h1>
-                <h2 style="margin:10px 0 20px;">${result.name}</h2>
-                <p style="font-size:18px;">${result.description}</p>
+                <div style="font-size:14px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">ТВОЙ РЕЗУЛЬТАТ</div>
+                <h1 style="font-size:56px; margin:0; color:var(--primary); line-height:1;">${score} <span style="font-size:24px; color:var(--text-muted);">/ ${total}</span></h1>
+                <h2 style="margin:15px 0 20px; font-size:28px;">${result.name}</h2>
+                <p style="font-size:18px; line-height:1.6;">${result.description}</p>
             </div>`;
 
         } else {
-            // --- PSY CALC (Old logic) ---
+            // --- 2. ЛОГИКА ПСИХОЛОГИЧЕСКОГО ТЕСТА (PSY) ---
+            
+            // Считаем сырые баллы для каждого outcome
             const scores = {};
             outcomes.forEach(o => scores[o.id] = 0);
+            
             this.state.questions.forEach((q, idx) => {
-                const ans = this.state.answers[idx]; // 1..5
-                const val = (ans || 3) - 3; 
-                if (q.mapping) q.mapping.forEach(m => scores[m.outcomeId] += (m.weight * val));
+                const ans = this.state.answers[idx]; // Ответ юзера 1..5
+                const val = (ans !== undefined ? ans : 3) - 3; // Превращаем в диапазон -2..+2
+                
+                if (q.mapping && Array.isArray(q.mapping)) {
+                    q.mapping.forEach(m => {
+                        if (scores[m.outcomeId] !== undefined) {
+                            scores[m.outcomeId] += (m.weight * val);
+                        }
+                    });
+                }
             });
 
-            // Categorical winner logic
+            // Ветвление по типу теста: Категория или Шкалы
             if (this.state.blueprint.testType !== 'dimensional') {
+                // А) CATEGORICAL (Типология - Один победитель)
                 const sorted = outcomes.sort((a,b) => scores[b.id] - scores[a.id]);
                 const win = sorted[0];
-                html = `<div style="text-align:center;">
-                    <h2 style="color:var(--primary); margin-bottom:10px;">${win.name}</h2>
-                    <p>${win.description}</p>
-                </div>`;
+                let maxScore = Math.max(...Object.values(scores), 1); // Чтобы не делить на ноль
+
+                html = `<div style="text-align:center; padding-bottom: 20px;">
+                    <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">Твой результат</div>
+                    <h2 style="font-size:32px; margin:0 0 10px; color:var(--primary);">${win.name}</h2>
+                    <p style="font-size:18px; line-height:1.6;">${win.description}</p>
+                </div>
+                <div class="results-secondary-block">
+                    <h4 class="results-secondary-title">Другие варианты:</h4>`;
+                
+                sorted.slice(1).forEach(o => {
+                    let pct = 0;
+                    if (scores[o.id] > 0) pct = (scores[o.id] / maxScore) * 100; // Процент от лидера
+                    
+                    html += `<div class="res-item">
+                        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
+                            <span>${o.name}</span>
+                            <span style="color:var(--text-muted); font-size:12px;">${Math.round(pct)}%</span>
+                        </div>
+                        <div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div>
+                    </div>`;
+                });
+                html += `</div>`;
             } else {
-                // Dimensional logic... (leave simplified for brevity)
-                html = `<p>Результаты шкал...</p>`; 
+                // Б) DIMENSIONAL (Шкалы - Много параметров)
+                html = `<div style="text-align:center; margin-bottom:25px;">
+                    <h2 style="color:var(--primary);">Ваш профиль</h2>
+                    <p style="color:var(--text-muted); font-size:14px;">Результаты по каждой шкале</p>
+                </div>`;
+                
+                outcomes.forEach(o => {
+                    const s = scores[o.id];
+                    // Нормализация: превращаем абстрактные очки (-10..+10) в проценты (0..100)
+                    // Базовая формула: 50% + (очки * коэффициент)
+                    const pct = Math.min(100, Math.max(0, 50 + (s * 5)));
+                    
+                    let levelText = pct > 65 ? "Высокий" : pct < 35 ? "Низкий" : "Средний";
+                    // Цвет бейджика можно менять, но пока оставим стандартный
+
+                    html += `<div class="res-item">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <strong>${o.name}</strong>
+                            <span class="badge">${levelText}</span>
+                        </div>
+                        <div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div>
+                        <small style="color:var(--text-muted); display:block; margin-top:5px; line-height:1.3;">${o.description}</small>
+                    </div>`;
+                });
             }
         }
         
         container.innerHTML = html;
         
-        // Save Btn update
+        // Кнопка сохранения
         const saveBtn = document.getElementById('saveTestBtn');
-        saveBtn.innerText = "💾 Сохранить";
-        saveBtn.disabled = false;
+        if (saveBtn) {
+            saveBtn.innerText = "💾 Сохранить в библиотеку";
+            saveBtn.disabled = false;
+        }
     },
 
     // --- UTILS ---
