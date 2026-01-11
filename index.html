@@ -4,77 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Евдокия Тестикова</title>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --text: #1e293b;
-            --text-light: #64748b;
-            --border: #e2e8f0;
-            --radius: 12px;
-            --danger: #ef4444;
-        }
-
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
-
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        
-        /* UI Components */
-        .card { background: var(--surface); padding: 30px; border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); }
-        
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 15px;}
-        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
-        .btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
-        .btn-secondary { background: #e2e8f0; color: var(--text); }
-        .btn-secondary:hover { background: #cbd5e1; }
-        .btn-text { background: none; color: var(--primary); padding: 0; width: auto; font-weight: 600; }
-        .btn-text:hover { text-decoration: underline; transform: none; background: none;}
-        
-        input, select { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; transition: border 0.2s; }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        label { font-weight: 600; font-size: 14px; display: block; margin-top: 18px; color: var(--text); }
-
-        /* Views */
-        .view { display: none; animation: fadeIn 0.4s ease-out; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Test UI */
-        .likert-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 30px 0; }
-        .likert-opt { border: 2px solid var(--border); padding: 15px 5px; text-align: center; border-radius: 8px; cursor: pointer; font-weight: 700; color: var(--text-light); transition: all 0.2s; }
-        .likert-opt:hover { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
-        .likert-opt.selected { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.05); }
-
-        .progress { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 25px; }
-        .bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.4s ease; }
-
-        /* Results */
-        .res-item { margin-bottom: 18px; }
-        .res-bar-bg { background: #f1f5f9; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 6px; }
-        .res-bar-fill { background: var(--primary); height: 100%; border-radius: 5px; }
-
-        /* Loader */
-        .loader { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s infinite; margin: 0 auto 20px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .header { text-align: center; margin-bottom: 30px; padding-top: 20px; }
-        .header h1 { margin: 0; font-size: 24px; color: var(--text); }
-        .header p { margin: 5px 0 0; color: var(--text-light); font-size: 14px; }
-        .badge { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 12px; font-size: 11px; vertical-align: middle; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <h1>🔮 Генератор Тестов имени Дуни Пахучей</h1>
-        <p>Работает на хлопьях с молоком 💅</p>
-    </div>
+    
+    <!-- НАЧАЛО БЛОКА ХЕДЕРА С ТЕМАМИ -->
+    <div class="header-row">
+        <div class="header-content">
+            <h1>🔮 Генератор Тестов им. Дуни Пахучей 💅</h1>
+            <p>Работает на хлопьях с молоком 🥣</p>
+        </div>
 
-    <div id="errorBox" style="background:#fef2f2; color:#991b1b; padding:15px; border-radius:8px; display:none; margin-bottom:20px; border:1px solid #fecaca;"></div>
+        <!-- Кнопка-пипетка -->
+        <button class="theme-toggle-btn" onclick="toggleThemeMenu()" title="Выбрать тему оформления">
+            🎨
+        </button>
+
+        <!-- Меню выбора (выпадает при клике) -->
+        <div class="theme-menu" id="themeMenu">
+            <div class="theme-opt" onclick="setTheme('light')">
+                <div class="theme-circle" style="background: #fff; border: 1px solid #ddd;"></div>
+                Светлая
+            </div>
+            <div class="theme-opt" onclick="setTheme('dark')">
+                <div class="theme-circle" style="background: #1e293b;"></div>
+                Темная
+            </div>
+            <div class="theme-opt" onclick="setTheme('gray')">
+                <div class="theme-circle" style="background: #e5e5e5; border: 1px solid #999;"></div>
+                Бумага
+            </div>
+        </div>
+    </div>
+    <!-- КОНЕЦ БЛОКА ХЕДЕРА -->
+
+    <div id="errorBox" style="background:#fef2f2; color:#991b1b; padding:15px; border-radius:12px; display:none; margin-bottom:20px; border:1px solid #fecaca;"></div>
 
     <!-- 1. VIEW: SETUP -->
     <div id="setupView" class="view active">
@@ -276,6 +242,50 @@ const api = {
         return this.safeParseJSON(data.candidates[0].content.parts[0].text);
     }
 };
+
+    // --- UI LOGIC (THEMES) ---
+    function toggleThemeMenu() {
+        const menu = document.getElementById('themeMenu');
+        menu.classList.toggle('active');
+        
+        // Закрываем при клике вне меню
+        if (menu.classList.contains('active')) {
+            document.addEventListener('click', closeMenuOutside);
+        }
+    }
+
+    function closeMenuOutside(e) {
+        if (!e.target.closest('.theme-menu') && !e.target.closest('.theme-toggle-btn')) {
+            document.getElementById('themeMenu').classList.remove('active');
+            document.removeEventListener('click', closeMenuOutside);
+        }
+    }
+
+    function setTheme(themeName) {
+        // Устанавливаем атрибут на body
+        if (themeName === 'light') {
+            document.body.removeAttribute('data-theme');
+        } else {
+            document.body.setAttribute('data-theme', themeName);
+        }
+        
+        // Сохраняем выбор пользователя
+        localStorage.setItem('user_theme', themeName);
+        
+        // Закрываем меню
+        document.getElementById('themeMenu').classList.remove('active');
+    }
+
+    // Инициализация темы при загрузке
+    (function initTheme() {
+        const saved = localStorage.getItem('user_theme');
+        if (saved) setTheme(saved);
+        
+        // Если ничего не сохранено, проверяем системную тему
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            setTheme('dark');
+        }
+    })();
 
 // --- APP LOGIC (v3.0 Final) ---
 const app = {
@@ -490,13 +500,31 @@ const app = {
     },
 
     saveCurrentTest() {
-        const themeName = document.getElementById('themeInput').value || "Без названия";
-        const success = Storage.save(this.state.blueprint, this.state.questions, themeName);
+        const themeInput = document.getElementById('themeInput');
+        // Если поле очищено, берем из blueprint или ставим дефолт
+        let themeName = themeInput.value || "Без темы";
+        
+        // Если мы загрузили тест из библиотеки и проходим его заново, 
+        // лучше сразу предложить сохранить как копию, или оставить как есть (механизм storage сам добавит цифру)
+        
+        // Вызываем save. Теперь он вернет строку (имя) или false (если вдруг ошибка)
+        const savedName = Storage.save(this.state.blueprint, this.state.questions, themeName);
+        
         const btn = document.getElementById('saveTestBtn');
-        if (success) {
-            btn.innerText = "✅ Сохранено!";
+        if (savedName) {
+            // Если имя изменилось (была копия), покажем это
+            if (savedName !== themeName) {
+                alert(`Тест с таким именем уже был. Сохранено как: "${savedName}"`);
+            }
+            
+            btn.innerHTML = "✅ Сохранено!";
             btn.disabled = true;
-        } else alert("Этот тест уже есть в вашей библиотеке.");
+            
+            // Опционально: обновить список библиотеки в фоне, если она открыта
+            // this.openLibrary(); 
+        } else {
+            alert("Ошибка при сохранении.");
+        }
     },
 
     loadSavedTest(id) {
