@@ -46,40 +46,54 @@
         </div>
 
         <div class="card">
-            <h2 style="margin-top: 0; font-size: 20px;">Новый тест</h2>
-            <form id="setupForm">
-                <label>Тема теста</label>
-                <input type="text" id="themeInput" placeholder="Например: Кто ты из Вселенной Гарри Поттера?" required>
+            <!-- HEADER WITH TABS -->
+            <div class="card-header-row">
+                <h2 class="card-title">Новый тест</h2>
+                <div class="mode-tabs">
+                    <button class="mode-tab active" id="tabPsy" onclick="app.setMode('psy')">Личность</button>
+                    <button class="mode-tab" id="tabQuiz" onclick="app.setMode('quiz')">Викторина</button>
+                </div>
+            </div>
 
-                <label>Уточнения / Пожелания <span style="font-weight:normal; opacity:0.7; font-size:12px;">(опционально)</span></label>
-                <textarea id="notesInput" rows="2" style="width:100%; padding:12px; margin-top:8px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font-family:inherit; resize:vertical;" placeholder="Например: Используй сленг, делай вопросы с черным юмором, ссылайся на лор книг..."></textarea>
+            <form id="setupForm">
+                <label>Тема</label>
+                <input type="text" id="themeInput" placeholder="Например: Знаток мемов 2025" required>
                 
-                <label>Для кого (Аудитория)</label>
-                <input type="text" id="audienceInput" value="Общая" placeholder="Подростки, IT-специалисты...">
+                <label>Уточнения <span style="font-weight:normal; opacity:0.7; font-size:12px;">(опционально)</span></label>
+                <textarea id="notesInput" rows="2" style="width:100%; padding:12px; margin-top:8px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font-family:inherit; resize:vertical;"></textarea>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <!-- ОПЦИИ ДЛЯ PSY -->
+                    <div id="audienceGroup">
+                        <label>Аудитория</label>
+                        <input type="text" id="audienceInput" value="Общая" placeholder="Кто проходит?">
+                    </div>
+                    
+                    <!-- ОПЦИИ ДЛЯ QUIZ (Скрыты по дефолту) -->
+                    <div id="difficultyGroup" style="display:none;">
+                        <label>Вариантов ответа</label>
+                        <select id="difficultyInput">
+                            <option value="2">2 (Да/Нет)</option>
+                            <option value="3">3 (Легко)</option>
+                            <option value="4" selected>4 (Стандарт)</option>
+                        </select>
+                    </div>
+
                     <div>
                         <label>Вопросов</label>
                         <select id="qCountInput">
-                            <option value="5">5 (Зачем?)</option>
-                            <option value="10" selected>10 (Быстрый)</option>
-                            <option value="15">15 (Обычный)</option>
-                            <option value="25">25 (Подробный)</option>
-                            <option value="69">69 (Тумач?)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Провайдер</label>
-                        <select disabled style="background: var(--bg); color: var(--text-muted);">
-                            <option>Авто-выбор по ключу</option>
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
                         </select>
                     </div>
                 </div>
 
-                <label>API Ключ <span style="font-weight:normal; color:var(--text-muted); font-size:12px;">(OpenRouter или Gemini)</span></label>
+                <label>API Ключ</label>
                 <input type="password" id="apiKeyInput" placeholder="sk-or-... или AIza..." required>
                 
-                <button type="submit" class="btn" style="margin-top: 25px;">🚀 Сгенерировать Тест</button>
+                <button type="submit" class="btn" style="margin-top: 25px;">🚀 Сгенерировать</button>
             </form>
         </div>
     </div>
@@ -98,11 +112,8 @@
 
     <!-- 4. VIEW: TEST -->
     <div id="testView" class="view">
-        <!-- Верхняя панель с кнопкой назад -->
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 15px;">
-            <button id="backBtn" class="btn-back" onclick="app.prevQuestion()">
-                ← Назад
-            </button>
+            <button id="backBtn" class="btn-back" onclick="app.prevQuestion()">← Назад</button>
             <div style="color: var(--text-muted); font-size: 13px; font-weight: 600;">
                 ВОПРОС <span id="qNum">1</span>
             </div>
@@ -113,16 +124,26 @@
         <div class="card">
             <h3 id="qText" style="font-size: 22px; margin-bottom: 30px; line-height: 1.4;">...</h3>
             
-            <div class="likert-grid">
+            <!-- Контейнер для PSY (1-5) -->
+            <div id="psyContainer" class="likert-grid">
                 <div class="likert-opt" onclick="app.answer(1)">1</div>
                 <div class="likert-opt" onclick="app.answer(2)">2</div>
                 <div class="likert-opt" onclick="app.answer(3)">3</div>
                 <div class="likert-opt" onclick="app.answer(4)">4</div>
                 <div class="likert-opt" onclick="app.answer(5)">5</div>
+                <div style="grid-column:1/-1; display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); margin-top:5px;">
+                    <span>❌ Нет</span><span>✅ Да</span>
+                </div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding:0 5px; font-weight:500;">
-                <span>❌ Нет / Никогда</span>
-                <span>✅ Да / Всегда</span>
+
+            <!-- Контейнер для QUIZ (Кнопки) -->
+            <div id="quizContainer" class="quiz-grid" style="display:none;">
+                <!-- JS сгенерирует кнопки здесь -->
+            </div>
+
+            <!-- Кнопка "Далее" для QUIZ -->
+            <div id="nextBtnContainer" class="next-btn-container" style="display:none;">
+                <button class="btn-next" onclick="app.nextQuestion()">Следующий вопрос →</button>
             </div>
         </div>
     </div>
