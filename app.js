@@ -9,7 +9,7 @@
 
 // !!! ВСТАВЬТЕ СЮДА ВАШ TINYURL API TOKEN !!!
 // Получить здесь: https://tinyurl.com/app/settings/api
-const TINY_TOKEN = 'ВАШ_ТОКЕН_ЗДЕСЬ'; 
+const TINY_TOKEN = 'lBjFvZGQQmPD56gcBpQBgdyMlezZCxwNShVIlh9wA3W4HFtDOI0418CnoXBx'; 
 
 // (API Client оставляем без изменений)
 const api = {
