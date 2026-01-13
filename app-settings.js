@@ -302,4 +302,4 @@ const PROMPTS = {
     }
 };
 
-console.log("✅ App Settings Loaded (v4.2 Final)");
+console.log("✅ App Settings Loaded (v6.5 Final)");
