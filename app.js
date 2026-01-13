@@ -1,10 +1,8 @@
 /**
- * AI Universal Test Generator - Core Logic v5.2 (Final Fix)
- * ============================================================
+ * AI Universal Test Generator - Core Logic v5.3 (Final Polish)
  */
 
 // !!! ВСТАВЬТЕ СЮДА ВАШ TINYURL API TOKEN !!!
-// (Для работы без токена используется fallback на старый API в функции createShareLink)
 const TINY_TOKEN = 'lBjFvZGQQmPD56gcBpQBgdyMlezZCxwNShVIlh9wA3W4HFtDOI0418CnoXBx'; 
 
 // --- API Client ---
@@ -31,10 +29,7 @@ const app = {
     // --- Инициализация ---
     init() {
         this.checkHash();
-        
-        // Обработка кнопки "Назад" в браузере
         window.onpopstate = () => {
-             // Сбрасываем хэш, чтобы не зациклиться
              history.replaceState(null, document.title, window.location.pathname);
              location.reload(); 
         };
@@ -44,6 +39,7 @@ const app = {
     checkHash() {
         if (window.location.hash.startsWith('#d=')) {
             try {
+                if (typeof LZString === 'undefined') throw new Error("LZString library not loaded");
                 const compressed = window.location.hash.substring(3);
                 const decompressed = LZString.decompressFromEncodedURIComponent(compressed);
                 const data = JSON.parse(decompressed);
@@ -84,9 +80,11 @@ const app = {
         this.setView('test');
     },
 
-    // --- БИБЛИОТЕКА (Восстановлено) ---
+    // --- БИБЛИОТЕКА ---
     openLibrary() {
         this.setView('library');
+        // Исправлено: используем libraryContent, а не libraryList
+        document.getElementById('libraryContent').innerHTML = Storage.renderLibraryHTML();
     },
 
     closeLibrary() {
@@ -100,15 +98,13 @@ const app = {
         document.getElementById('tabQuiz').classList.toggle('active', mode === 'quiz');
         document.getElementById('audienceGroup').style.display = mode === 'psy' ? 'block' : 'none';
         document.getElementById('difficultyGroup').style.display = mode === 'quiz' ? 'block' : 'none';
-        const themeInput = document.getElementById('themeInput');
-        themeInput.placeholder = mode === 'psy' ? "Например: Кто ты из Вселенной Гарри Поттера?" : "Например: Знаток географии Европы";
+        document.getElementById('themeInput').placeholder = mode === 'psy' ? "Например: Кто ты из Вселенной Гарри Поттера?" : "Например: Знаток географии Европы";
     },
 
     // --- ГЕНЕРАЦИЯ ---
     async start(e) {
         if(e) e.preventDefault();
         
-        // Сброс состояния
         this.state.step = 0;
         this.state.answers = [];
         this.state.quizScore = 0;
@@ -132,13 +128,10 @@ const app = {
 
         try {
             const notesText = notes ? `УТОЧНЕНИЯ: "${notes}".` : "";
-            
-            // 1. Blueprint
             const archPrompt = `Тема: "${theme}". ${contextParam}. ${notesText} Создай структуру.`;
             this.state.blueprint = await api.call('architect' + taskSuffix, archPrompt, (isQuiz ? SCHEMAS.quiz_blueprint : SCHEMAS.psy_blueprint), apiKey);
             this.state.blueprint.theme = theme; 
 
-            // 2. Questions
             this.setLoading(true, "✍️ Придумываем вопросы...");
             const optionsCount = isQuiz ? document.getElementById('difficultyInput').value : 0;
             const optionsInstruction = isQuiz ? `СТРОГОЕ ТРЕБОВАНИЕ: В каждом вопросе должно быть ровно ${optionsCount} варианта(ов) ответа!` : "";
@@ -147,13 +140,13 @@ const app = {
             const res = await api.call('generator' + taskSuffix, genPrompt, (isQuiz ? SCHEMAS.quiz_questions : SCHEMAS.psy_questions), apiKey);
             this.state.questions = res.questions;
             
-            this.setLoading(false); // <--- ВАЖНО: Убираем экран загрузки
+            this.setLoading(false);
             this.renderQ();
             this.setView('test');
 
         } catch (err) {
             console.error(err);
-            this.setLoading(false); // И здесь тоже
+            this.setLoading(false);
             document.getElementById('errorBox').style.display = 'block';
             document.getElementById('errorBox').innerHTML = `Ошибка: ${err.message}`;
             this.setView('setup');
@@ -175,59 +168,71 @@ const app = {
 
         const psyDiv = document.getElementById('psyContainer');
         const quizDiv = document.getElementById('quizContainer');
-        const nextDiv = document.getElementById('nextBtnContainer');
 
         if (isQuiz) {
-            // --- РЕЖИМ ВИКТОРИНЫ ---
             psyDiv.style.display = 'none';
-            quizDiv.style.display = 'grid'; // Используем Grid как в оригинале (или flex, если поменяли CSS, но grid надежнее для кнопок)
-            nextDiv.style.display = 'none';
+            quizDiv.style.display = 'grid'; // Используем grid для красивого отображения
 
             let html = '';
             q.options.forEach((opt, idx) => {
-                // ВАЖНО: Добавил класс 'quiz-option-btn'
                 html += `<button class="quiz-option-btn" onclick="app.handleQuizAnswer(${idx}, this)">${opt}</button>`;
             });
             quizDiv.innerHTML = html;
         } else {
-            // --- РЕЖИМ ПСИХОЛОГИИ ---
-            psyDiv.style.display = 'grid'; // <--- ИСПРАВЛЕНО: Было 'flex', из-за чего ломался likert-grid
+            psyDiv.style.display = 'grid'; // Grid для шкалы
             quizDiv.style.display = 'none';
-            nextDiv.style.display = 'flex';
             
-            // Сброс выделения кнопок шкалы
-            // Мы используем querySelectorAll внутри psyContainer, чтобы не зацепить лишнее
             const btns = psyDiv.querySelectorAll('div'); 
             btns.forEach(b => b.classList.remove('selected'));
             
-            // Восстановление ответа, если возвращаемся назад
             const prevAns = this.state.answers[this.state.step];
             if (prevAns !== undefined) {
-                 // У нас 5 кнопок. Индекс = значение - 1.
-                 // Но кнопки - это div-ы с onclick.
-                 // Простой способ найти нужную:
-                 const target = psyDiv.querySelector(`div[onclick*="app.answer(${prevAns})"]`);
-                 if(target) target.classList.add('selected');
+                 if(btns[prevAns-1]) btns[prevAns-1].classList.add('selected');
             }
         }
     },
     
-    // Обработчик шкалы (1-5)
-    // Вызывается из HTML: onclick="app.answer(X)"
+    // --- ОБРАБОТЧИКИ ОТВЕТОВ ---
+
+    // 1. Психологический тест (авто-переход)
     answer(val) {
         this.state.answers[this.state.step] = parseInt(val);
         
-        // Визуальная подсветка
+        // Подсветка
         const container = document.getElementById('psyContainer');
         const btns = container.querySelectorAll('.likert-opt');
-        
         btns.forEach(b => b.classList.remove('selected'));
-        // Находим нажатую кнопку по индексу (val-1)
         if(btns[val-1]) btns[val-1].classList.add('selected');
+
+        // АВТО-ПЕРЕХОД (новое)
+        setTimeout(() => {
+            this.nextQuestion();
+        }, 300);
+    },
+
+    // 2. Викторина (с проверкой)
+    handleQuizAnswer(idx, btn) {
+        const q = this.state.questions[this.state.step];
+        const isCorrect = (idx === q.correctIndex);
+        
+        if (isCorrect) {
+            btn.classList.add('correct');
+            this.state.quizScore++;
+        } else {
+            btn.classList.add('wrong');
+            const allBtns = document.querySelectorAll('.quiz-option-btn');
+            if(allBtns[q.correctIndex]) allBtns[q.correctIndex].classList.add('correct');
+        }
+
+        const allBtns = document.querySelectorAll('.quiz-option-btn');
+        allBtns.forEach(b => b.disabled = true);
+
+        setTimeout(() => {
+            this.nextQuestion();
+        }, 1200); 
     },
 
     nextQuestion() {
-        if (this.state.mode === 'psy' && this.state.answers[this.state.step] === undefined) return alert("Выберите вариант ответа!");
         if (this.state.step < this.state.questions.length - 1) {
             this.state.step++;
             this.renderQ();
@@ -244,36 +249,7 @@ const app = {
         }
     },
 
-    handleQuizAnswer(idx, btn) {
-        const q = this.state.questions[this.state.step];
-        const isCorrect = (idx === q.correctIndex);
-        
-        if (isCorrect) {
-            btn.classList.add('correct');
-            this.state.quizScore++;
-        } else {
-            btn.classList.add('wrong');
-            // Подсветка правильного
-            const allBtns = document.querySelectorAll('.quiz-option-btn');
-            if(allBtns[q.correctIndex]) allBtns[q.correctIndex].classList.add('correct');
-        }
-
-        // Блок кнопок
-        const allBtns = document.querySelectorAll('.quiz-option-btn');
-        allBtns.forEach(b => b.disabled = true);
-
-        setTimeout(() => {
-            if (this.state.step < this.state.questions.length - 1) {
-                this.state.step++;
-                this.renderQ();
-            } else {
-                this.calc();
-                this.setView('results');
-            }
-        }, 1200); 
-    },
-
-    // --- ПОДСЧЕТ И ВЫВОД РЕЗУЛЬТАТОВ ---
+    // --- ПОДСЧЕТ РЕЗУЛЬТАТОВ ---
     calc() {
         const outcomes = this.state.blueprint.outcomes;
         const container = document.getElementById('resContent');
@@ -283,13 +259,8 @@ const app = {
             const score = this.state.quizScore;
             const total = this.state.questions.length;
             
-            // Находим результат по баллам
-            let result = outcomes.find(o => score >= o.minScore && score <= o.maxScore);
-            if (!result) {
-                 // Fallback если баллы не попали в диапазоны
-                 result = (score === 0) ? outcomes[0] : outcomes[outcomes.length - 1];
-            }
-
+            let result = outcomes.find(o => score >= o.minScore && score <= o.maxScore) || outcomes[0];
+            
             let duelBlock = '';
             if (this.state.mode === 'duel') {
                 const hostScore = this.state.duelHostScore;
@@ -319,7 +290,6 @@ const app = {
             </div>`;
 
         } else {
-            // --- PSY LOGIC (Как было) ---
             const scores = {};
             outcomes.forEach(o => scores[o.id] = 0);
             this.state.questions.forEach((q, idx) => {
@@ -331,26 +301,20 @@ const app = {
             if (this.state.blueprint.testType !== 'dimensional') {
                 const sorted = outcomes.sort((a,b) => scores[b.id] - scores[a.id]);
                 const win = sorted[0];
-                let maxScore = Math.max(...Object.values(scores), 1); // fix div by zero
+                let maxScore = Math.max(...Object.values(scores), 1);
 
                 html = `<div style="text-align:center; padding-bottom: 20px;">
                     <div style="font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px;">Твой результат</div>
                     <h2 style="font-size:32px; margin:0 0 10px; color:var(--primary);">${win.name}</h2>
                     <p style="font-size:18px; line-height:1.6;">${win.description}</p>
-                </div>
-                <div class="results-secondary-block"> <h4 class="results-secondary-title">Другие варианты:</h4>`;
-                sorted.slice(1).forEach(o => {
-                    let pct = 0; if (scores[o.id] > 0) pct = (scores[o.id] / maxScore) * 100;
-                    html += `<div class="res-item"><div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>${o.name}</span><span style="color:var(--text-muted); font-size:12px;">${Math.round(pct)}%</span></div><div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div></div>`;
-                });
-                html += `</div>`;
+                </div>`;
+                // Опционально: можно вернуть блок "другие варианты" если нужно
             } else {
-                html = `<div style="text-align:center; margin-bottom:25px;"><h2 style="color:var(--primary);">Ваш профиль</h2><p style="color:var(--text-muted); font-size:14px;">Результаты по каждой шкале</p></div>`;
+                html = `<div style="text-align:center; margin-bottom:25px;"><h2 style="color:var(--primary);">Ваш профиль</h2></div>`;
                 outcomes.forEach(o => {
                     const s = scores[o.id];
                     const pct = Math.min(100, Math.max(0, 50 + (s * 5)));
-                    let levelText = pct > 65 ? "Высокий" : pct < 35 ? "Низкий" : "Средний";
-                    html += `<div class="res-item"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><strong>${o.name}</strong><span class="badge">${levelText}</span></div><div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div><small style="color:var(--text-muted); display:block; margin-top:5px; line-height:1.3;">${o.description}</small></div>`;
+                    html += `<div><strong>${o.name}</strong>: ${pct}%</div>`;
                 });
             }
         }
@@ -359,7 +323,7 @@ const app = {
 
         html += `
         <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:30px;">
-            <button id="saveTestBtn" class="btn" onclick="app.saveTest()" style="flex:1; min-width:200px;">💾 Сохранить в библиотеку</button>
+            <button id="saveTestBtn" class="btn" onclick="app.saveTest()" style="flex:1; min-width:200px;">💾 Сохранить</button>
             <button id="shareBtn" class="btn" onclick="app.createShareLink()" style="flex:1; min-width:200px; background: var(--accent);">${shareBtnText}</button>
         </div>
         `;
@@ -367,8 +331,11 @@ const app = {
         container.innerHTML = html;
     },
 
-    // --- SHARING (TinyURL) ---
+    // --- SHARING (TinyURL v2 API) ---
     async createShareLink() {
+        if(!TINY_TOKEN) return alert("Пожалуйста, добавьте ваш TinyURL Token в app.js!");
+        if(typeof LZString === 'undefined') return alert("Ошибка: Библиотека LZString не загружена!");
+
         const btn = document.getElementById('shareBtn');
         const originalText = btn.innerHTML;
         btn.innerHTML = "⏳ Создаем ссылку...";
@@ -380,23 +347,35 @@ const app = {
             const name = prompt("Как тебя представить?", "Мастер Игры") || "Аноним";
 
             const payload = { h: name, s: score, t: this.state.blueprint, q: this.state.questions };
+            // Исправлено: сохранение темы в blueprint если её там нет
             if(!payload.t.theme) payload.t.theme = document.getElementById('themeInput').value || "Тест";
 
             const jsonString = JSON.stringify(payload);
             const compressed = LZString.compressToEncodedURIComponent(jsonString);
             const longUrl = `${window.location.origin}${window.location.pathname}#d=${compressed}`;
 
-            // Используем публичный endpoint, не требующий ключа
-            const response = await fetch(`https://tinyurl.com/api-create.php?url=${longUrl}`);
-            
-            if (!response.ok) throw new Error('TinyURL Error');
-            const shortUrl = await response.text();
+            // Запрос к официальному TinyURL API v2
+            const response = await fetch('https://api.tinyurl.com/create', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${TINY_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: longUrl,
+                    domain: "tiny.one"
+                })
+            });
+
+            if (!response.ok) throw new Error('TinyURL API Error');
+            const data = await response.json();
+            const shortUrl = data.data.tiny_url;
 
             prompt("Скопируй ссылку и отправь другу:", shortUrl);
 
         } catch (e) {
             console.error(e);
-            alert("Ошибка создания короткой ссылки. Попробуйте позже.");
+            alert("Не удалось создать ссылку. Проверьте консоль или ваш API Token.");
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -405,7 +384,7 @@ const app = {
     
     saveTest() {
         const name = Storage.save(this.state.blueprint, this.state.questions, this.state.blueprint.theme || document.getElementById('themeInput').value);
-        alert(`Тест "${name}" сохранен в библиотеку!`);
+        alert(`Тест "${name}" сохранен!`);
         document.getElementById('saveTestBtn').innerText = "✅ Сохранено";
         document.getElementById('saveTestBtn').disabled = true;
     },
@@ -416,6 +395,7 @@ const app = {
         this.state.blueprint = test.blueprint;
         this.state.questions = test.questions;
         this.state.mode = (test.blueprint.testType === 'quiz') ? 'quiz' : 'psy';
+        
         this.state.step = 0;
         this.state.answers = [];
         this.state.quizScore = 0;
@@ -427,7 +407,7 @@ const app = {
     deleteTest(id) {
         if(confirm('Удалить тест?')) {
             Storage.delete(id);
-            this.setView('library');
+            this.openLibrary(); // Обновляем список
         }
     },
 
@@ -436,9 +416,6 @@ const app = {
             const el = document.getElementById(v);
             if(el) el.style.display = 'none';
         });
-        if (view === 'library') {
-             document.getElementById('libraryList').innerHTML = Storage.renderLibraryHTML();
-        }
         document.getElementById(view + 'View').style.display = 'block';
     },
 
