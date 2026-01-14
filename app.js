@@ -404,10 +404,18 @@ const app = {
             const baseScoreMap = scaleProfile && scaleProfile.baseScoreMap ? scaleProfile.baseScoreMap : null;
             const interpretationBands = scaleProfile && scaleProfile.interpretationBands ? scaleProfile.interpretationBands : null;
             
+            // Структурные метрики по outcomes (для диагностики)
+            const structure = {};
             outcomes.forEach(o => {
                 scores[o.id] = 0;
                 maxPossible[o.id] = 0;
                 minPossible[o.id] = 0;
+                structure[o.id] = {
+                    sumAbsWeight: 0,
+                    numItems: 0,
+                    numReverseItems: 0,
+                    numTwoOutcomeItems: 0
+                };
             });
 
             this.state.questions.forEach((q, idx) => {
@@ -415,15 +423,23 @@ const app = {
                 const baseScore = getBaseScore(ans, baseScoreMap);
                 
                 if (q.mapping) {
+                    const mappingLen = q.mapping.length;
                     q.mapping.forEach(m => {
                         if (scores[m.outcomeId] !== undefined) {
                             const weight = m.weight || 1;
                             const polarity = weight > 0 ? 1 : -1;
                             const finalScore = polarity === 1 ? baseScore : (10 - baseScore);
                             
-                            scores[m.outcomeId] += finalScore * Math.abs(weight);
+                            const absW = Math.abs(weight);
+                            scores[m.outcomeId] += finalScore * absW;
                             minPossible[m.outcomeId] += 0;
-                            maxPossible[m.outcomeId] += 10 * Math.abs(weight);
+                            maxPossible[m.outcomeId] += 10 * absW;
+
+                            const s = structure[m.outcomeId];
+                            s.sumAbsWeight += absW;
+                            s.numItems += 1;
+                            if (weight < 0) s.numReverseItems += 1;
+                            if (mappingLen === 2) s.numTwoOutcomeItems += 1;
                         }
                     });
                 }
@@ -453,11 +469,20 @@ const app = {
                 outcomes.forEach(o => {
                     const pct = percentages[o.id] ?? 0;
                     const band = pickBandLabel(interpretationBands, pct);
+                    const st = structure[o.id];
+                    const revPct = st.numItems > 0 ? Math.round((st.numReverseItems / st.numItems) * 100) : 0;
+                    const twoOutPct = st.numItems > 0 ? Math.round((st.numTwoOutcomeItems / st.numItems) * 100) : 0;
                     diagnosticsHtml += `
                         <div class="diag-row">
                             <div class="diag-row-main">
                                 <div class="diag-title">${o.name}</div>
                                 <div class="diag-sub"><span>${pct}%${band ? ` • ${band}` : ``}</span></div>
+                            </div>
+                            <div class="diag-meta">
+                                <span class="diag-pill">∑|w|: ${st.sumAbsWeight.toFixed(2)}</span>
+                                <span class="diag-pill">items: ${st.numItems}</span>
+                                <span class="diag-pill">reverse: ${st.numReverseItems} (${revPct}%)</span>
+                                <span class="diag-pill">2-outcome: ${twoOutPct}%</span>
                             </div>
                         </div>`;
                 });
@@ -499,12 +524,21 @@ const app = {
                 html = `<div style="text-align:center; margin-bottom:25px;"><h2>Ваш профиль</h2></div>`;
                 outcomes.forEach(o => {
                     const pct = percentages[o.id];
+                    let interpText = '';
+                    if (typeof o.highInterpretation === 'string' && typeof o.lowInterpretation === 'string') {
+                        if (pct >= 70) interpText = o.highInterpretation;
+                        else if (pct <= 30) interpText = o.lowInterpretation;
+                        else if (typeof o.description === 'string') interpText = o.description;
+                    } else if (typeof o.description === 'string') {
+                        interpText = o.description;
+                    }
                     html += `<div class="res-item">
                         <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                             <strong>${o.name}</strong>
                             <span style="color:var(--primary); font-weight:600; font-size:16px;">${pct}%</span>
                         </div>
                         <div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div>
+                        ${interpText ? `<div style="margin-top:6px; font-size:13px; color:var(--text-muted);">${interpText}</div>` : ``}
                     </div>`;
                 });
                 html += diagnosticsHtml;
