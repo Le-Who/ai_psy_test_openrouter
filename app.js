@@ -1,8 +1,9 @@
 /**
- * AI Universal Test Generator - Core Logic v5.5 (Final Polish)
+ * AI Universal Test Generator - Core Logic v6.0 (Final UI/UX Polish)
+ * Features: Glassmorphism support, Clipboard API, Confetti, Toast Notifications
  */
 
-const TINY_TOKEN = 'lBjFvZGQQmPD56gcBpQBgdyMlezZCxwNShVIlh9wA3W4HFtDOI0418CnoXBx'; // Не забудьте вставить!
+const TINY_TOKEN = 'lBjFvZGQQmPD56gcBpQBgdyMlezZCxwNShVIlh9wA3W4HFtDOI0418CnoXBx'; 
 
 const api = {
     detectProvider(key) { return key.startsWith('AIza') ? 'gemini' : 'openrouter'; },
@@ -22,12 +23,28 @@ const app = {
         quizScore: 0,
         duelHostName: null,
         duelHostScore: null,
-        duelHostResultName: null // Для пси-тестов: какой результат выпал автору
+        duelHostResultName: null
     },
 
     init() {
+        // Восстанавливаем API ключ для удобства
+        const savedKey = localStorage.getItem('user_api_key');
+        if (savedKey) {
+            const input = document.getElementById('apiKeyInput');
+            if (input) input.value = savedKey;
+        }
+
         this.checkHash();
         window.onpopstate = () => { history.replaceState(null, document.title, window.location.pathname); location.reload(); };
+    },
+
+    // --- UI HELPER: TOAST ---
+    showToast(message) {
+        const x = document.getElementById("toast");
+        if (!x) return; // Если элемент еще не добавлен в HTML
+        x.innerText = message;
+        x.className = "show";
+        setTimeout(function() { x.className = x.className.replace("show", ""); }, 3000);
     },
 
     // --- ЛОГИКА SHARING / DUEL ---
@@ -40,12 +57,12 @@ const app = {
                 const data = JSON.parse(decompressed);
 
                 if (data && data.t && data.q) {
-                    this.state.mode = 'duel'; // Включаем режим "по ссылке"
+                    this.state.mode = 'duel';
                     this.state.blueprint = data.t;
                     this.state.questions = data.q;
                     this.state.duelHostName = data.h || "Аноним";
                     this.state.duelHostScore = data.s || 0;
-                    this.state.duelHostResultName = data.r || null; // Результат автора (для psy)
+                    this.state.duelHostResultName = data.r || null;
 
                     this.showDuelIntro();
                 }
@@ -61,20 +78,22 @@ const app = {
         const dv = document.getElementById('duelView');
         const isQuiz = (this.state.blueprint.testType === 'quiz');
 
-        // Тексты для разных режимов
         const title = isQuiz ? "ВЫЗОВ ПРИНЯТ! ⚔️" : "СМОТРИ МОЙ РЕЗУЛЬТАТ! 👀";
         let desc = "";
 
         if (isQuiz) {
             desc = `Пользователь <strong style="color:#fff;">${this.state.duelHostName}</strong> набрал <strong style="color:var(--accent);">${this.state.duelHostScore}</strong> баллов.<br>Сможешь его победить?`;
         } else {
-            // Для Психотеста показываем, кто получился у автора (если есть инфа)
             const resultText = this.state.duelHostResultName ? `Ему выпало: <strong style="color:var(--accent);">${this.state.duelHostResultName}</strong>` : "Он уже прошел этот тест.";
             desc = `Пользователь <strong style="color:#fff;">${this.state.duelHostName}</strong> прошел тест.<br>${resultText}<br>А кто ты?`;
         }
 
-        document.getElementById('duelView').querySelector('h1').innerText = title;
-        document.getElementById('duelView').querySelector('p').innerHTML = desc;
+        const dvH1 = dv.querySelector('h1');
+        if(dvH1) dvH1.innerText = title;
+        
+        const dvP = dv.querySelector('p');
+        if(dvP) dvP.innerHTML = desc;
+
         document.getElementById('duelThemeTitle').innerText = this.state.blueprint.theme || "Тест";
         document.getElementById('duelQCount').innerText = this.state.questions.length;
         
@@ -87,14 +106,11 @@ const app = {
         this.state.answers = [];
         this.state.quizScore = 0;
         
-        // Исправляем ошибку: восстанавливаем режим из blueprint
-        // Если в blueprint тип 'quiz', то и режим ставим 'quiz' (или 'duel' для логики финала)
         const type = this.state.blueprint.testType || 'categorical';
-        
         if (type === 'quiz') {
-            this.state.mode = 'duel'; // Это викторина-дуэль
+            this.state.mode = 'duel';
         } else {
-            this.state.mode = 'psy'; // Это просто прохождение чужого пси-теста (не дуэль)
+            this.state.mode = 'psy';
         }
         
         this.renderQ();
@@ -130,7 +146,11 @@ const app = {
         const theme = document.getElementById('themeInput').value;
         const notes = document.getElementById('notesInput').value;
         const count = document.getElementById('qCountInput').value;
+        
         if(!apiKey) return alert("Введите API ключ!");
+        
+        // Сохраняем ключ
+        localStorage.setItem('user_api_key', apiKey);
 
         const isQuiz = this.state.mode === 'quiz';
         const contextParam = isQuiz ? `Сложность: ${document.getElementById('difficultyInput').value}` : `Аудитория: ${document.getElementById('audienceInput').value}`;
@@ -149,7 +169,7 @@ const app = {
             const genPrompt = `Тема: ${theme}. Структура: ${JSON.stringify(this.state.blueprint.outcomes)}. Кол-во вопросов: ${count}. ${isQuiz ? `ВАЖНО: ${optionsCount} варианта ответа в каждом вопросе!` : ""} ${notes}`;
             
             const res = await api.call('generator' + taskSuffix, genPrompt, (isQuiz ? SCHEMAS.quiz_questions : SCHEMAS.psy_questions), apiKey);
-            // Поддержка расширенного ответа (meta/scaleProfile/outcomes/questions)
+            
             const hasNestedQuestions = res && typeof res === 'object' && Array.isArray(res.questions);
             this.state.questions = hasNestedQuestions ? res.questions : res;
             if (hasNestedQuestions) {
@@ -174,7 +194,6 @@ const app = {
     renderQ() {
         const q = this.state.questions[this.state.step];
         const total = this.state.questions.length;
-        // Проверяем: это викторина ИЛИ дуэль (но дуэль только если blueprint говорит что это quiz)
         const isQuizMode = (this.state.mode === 'quiz' || (this.state.mode === 'duel' && this.state.blueprint.testType === 'quiz'));
 
         document.getElementById('qNum').innerText = `${this.state.step + 1} / ${total}`;
@@ -189,11 +208,10 @@ const app = {
 
         if (isQuizMode) {
             psyDiv.style.display = 'none';
-            quizDiv.style.display = 'flex'; // Flex, так как в CSS .quiz-grid display:flex
+            quizDiv.style.display = 'flex';
             
             let html = '';
             q.options.forEach((opt, idx) => {
-                // ИСПРАВЛЕНИЕ: Используем правильный класс 'quiz-opt' из CSS
                 html += `<button class="quiz-opt" onclick="app.handleQuizAnswer(${idx}, this)">${opt}</button>`;
             });
             quizDiv.innerHTML = html;
@@ -201,7 +219,6 @@ const app = {
             psyDiv.style.display = 'grid';
             quizDiv.style.display = 'none';
             
-            // Сброс выделения
             const btns = psyDiv.querySelectorAll('.likert-opt'); 
             btns.forEach(b => b.classList.remove('selected'));
             const prevAns = this.state.answers[this.state.step];
@@ -227,10 +244,9 @@ const app = {
             if(allBtns[q.correctIndex]) allBtns[q.correctIndex].classList.add('correct');
         }
         
-        // Добавляем класс disabled (в CSS он делает opacity: 0.7)
         document.querySelectorAll('.quiz-opt').forEach(b => {
              b.classList.add('disabled');
-             b.disabled = true; // на всякий случай
+             b.disabled = true;
         });
 
         setTimeout(() => this.nextQuestion(), 1200); 
@@ -253,7 +269,7 @@ const app = {
         }
     },
 
-    // --- CALC RESULTS (FIXED) ---
+    // --- CALC RESULTS ---
     calc() {
         const getBaseScore = (ans, baseScoreMap) => {
             const a = (ans !== undefined && ans !== null) ? Number(ans) : 3;
@@ -261,13 +277,11 @@ const app = {
                 const v = baseScoreMap[String(a)];
                 if (typeof v === 'number' && Number.isFinite(v)) return v;
             }
-            // default linear mapping 1..5 -> 0..10
             return (a - 1) * 2.5;
         };
 
         const pickBandLabel = (bands, percent) => {
             if (!bands) return null;
-            // Accept: [{label,min,max}], [{name,min,max}], {low:{min,max,label},...}
             if (Array.isArray(bands)) {
                 for (const b of bands) {
                     if (!b || typeof b !== 'object') continue;
@@ -294,8 +308,6 @@ const app = {
         const outcomes = this.state.blueprint.outcomes;
         const container = document.getElementById('resContent');
         let html = '';
-        
-        // Сохраняем имя результата для шаринга
         let winningResultName = "";
 
         // 1. ВИКТОРИНА (или Дуэль)
@@ -313,7 +325,7 @@ const app = {
                 if (score > hostScore) { verdict = "ТЫ ПОБЕДИЛ! 🏆"; color = "#4caf50"; }
                 else if (score === hostScore) { verdict = "НИЧЬЯ! 🤝"; color = "#ffd700"; }
                 else { verdict = "ТЫ ПРОИГРАЛ... 💀"; color = "#f44336"; }
-                duelBlock = `<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin:20px 0;">
+                duelBlock = `<div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:12px; margin:20px 0; border:1px solid rgba(255,255,255,0.2);">
                     <h3 style="margin:0 0 10px; color:${color};">${verdict}</h3>
                     <div style="display:flex; justify-content:space-around;"><div>👤 Ты: <strong>${score}</strong></div><div>🆚 ${hostName}: <strong>${hostScore}</strong></div></div>
                 </div>`;
@@ -330,8 +342,8 @@ const app = {
         } else {
             // 2. ПСИХОЛОГИЧЕСКИЙ ТЕСТ
             const scores = {};
-            const maxPossible = {}; // Максимально возможный балл по каждому исходу (raw max)
-            const minPossible = {}; // Минимально возможный балл по каждому исходу (raw min)
+            const maxPossible = {};
+            const minPossible = {};
             const scaleProfile = this.state.blueprint.scaleProfile || null;
             const baseScoreMap = scaleProfile && scaleProfile.baseScoreMap ? scaleProfile.baseScoreMap : null;
             const interpretationBands = scaleProfile && scaleProfile.interpretationBands ? scaleProfile.interpretationBands : null;
@@ -342,23 +354,18 @@ const app = {
                 minPossible[o.id] = 0;
             });
 
-            // Подсчёт с нормализацией
             this.state.questions.forEach((q, idx) => {
                 const ans = this.state.answers[idx] !== undefined ? this.state.answers[idx] : 3;
-                // Преобразуем ответ 1-5 в baseScore 0..10 (по scaleProfile.baseScoreMap или линейно)
                 const baseScore = getBaseScore(ans, baseScoreMap);
                 
                 if (q.mapping) {
                     q.mapping.forEach(m => {
                         if (scores[m.outcomeId] !== undefined) {
-                            // Учитываем "вес" (если AI передал), но нормализуем
                             const weight = m.weight || 1;
                             const polarity = weight > 0 ? 1 : -1;
-                            // reverse item = инверсия ответа, не отрицательный вклад
                             const finalScore = polarity === 1 ? baseScore : (10 - baseScore);
                             
                             scores[m.outcomeId] += finalScore * Math.abs(weight);
-                            // min всегда 0, max всегда 10 (после инверсии тоже 0..10)
                             minPossible[m.outcomeId] += 0;
                             maxPossible[m.outcomeId] += 10 * Math.abs(weight);
                         }
@@ -366,10 +373,8 @@ const app = {
                 }
             });
 
-            // Конвертируем в проценты
             const percentages = {};
             outcomes.forEach(o => {
-                // Если есть scaleProfile.outcomePotential с minRaw/maxRaw — используем их для нормировки
                 const pot = scaleProfile && scaleProfile.outcomePotential ? scaleProfile.outcomePotential[o.id] : null;
                 const minRaw = (pot && typeof pot.minRaw === 'number') ? pot.minRaw : minPossible[o.id];
                 const maxRaw = (pot && typeof pot.maxRaw === 'number') ? pot.maxRaw : maxPossible[o.id];
@@ -381,57 +386,29 @@ const app = {
                 }
             });
 
-            // Диагностика шкал (если есть scaleProfile)
+            // Диагностика
             let diagnosticsHtml = '';
             if (scaleProfile) {
                 diagnosticsHtml += `<div class="diag-card">
-                    <details open>
+                    <details>
                         <summary class="diag-summary">🔬 Диагностика шкал (для автора)</summary>
                         <div class="diag-body">`;
-
                 diagnosticsHtml += `<div class="diag-outcomes">`;
                 outcomes.forEach(o => {
                     const pct = percentages[o.id] ?? 0;
-                    const pot = scaleProfile.outcomePotential && scaleProfile.outcomePotential[o.id] ? scaleProfile.outcomePotential[o.id] : null;
                     const band = pickBandLabel(interpretationBands, pct);
-                    const numItems = pot && typeof pot.numItems === 'number' ? pot.numItems : (pot && pot.count) || '';
-                    const numReverseItems = pot && typeof pot.numReverseItems === 'number' ? pot.numReverseItems : '';
-                    const sumAbsWeight = pot && typeof pot.sumAbsWeight === 'number' ? pot.sumAbsWeight.toFixed(2) : '';
-
                     diagnosticsHtml += `
                         <div class="diag-row">
                             <div class="diag-row-main">
                                 <div class="diag-title">${o.name}</div>
-                                <div class="diag-sub">
-                                    <span>${pct}%${band ? ` • ${band}` : ``}</span>
-                                </div>
-                            </div>
-                            <div class="diag-meta">
-                                ${sumAbsWeight ? `<span class="diag-pill">∑|w|: ${sumAbsWeight}</span>` : ``}
-                                ${numItems !== '' ? `<span class="diag-pill">items: ${numItems}</span>` : ``}
-                                ${numReverseItems !== '' ? `<span class="diag-pill">reverse: ${numReverseItems}</span>` : ``}
+                                <div class="diag-sub"><span>${pct}%${band ? ` • ${band}` : ``}</span></div>
                             </div>
                         </div>`;
                 });
-                diagnosticsHtml += `</div>`;
-
-                if (scaleProfile.qualityChecks) {
-                    const qcStr = (() => {
-                        try { return JSON.stringify(scaleProfile.qualityChecks, null, 2); }
-                        catch { return String(scaleProfile.qualityChecks); }
-                    })();
-                    diagnosticsHtml += `
-                        <div class="diag-qc">
-                            <div class="diag-qc-title">Проверки качества (qualityChecks)</div>
-                            <pre class="diag-code">${qcStr}</pre>
-                        </div>`;
-                }
-
-                diagnosticsHtml += `</div></details></div>`;
+                diagnosticsHtml += `</div></div></details></div>`;
             }
 
             if (this.state.blueprint.testType !== 'dimensional') {
-                // Сортируем результаты по очкам
                 const sorted = outcomes.sort((a,b) => scores[b.id] - scores[a.id]);
                 const win = sorted[0];
                 winningResultName = win.name;
@@ -445,61 +422,66 @@ const app = {
                     ${band ? `<div style="margin-top:8px; color:var(--text-muted); font-weight:600;">Интерпретация: ${band}</div>` : ``}
                 </div>
                 
-                <!-- ВОССТАНОВЛЕННЫЙ БЛОК: Другие варианты -->
                 <div class="results-secondary-block">
                     <h4 class="results-secondary-title">Другие варианты:</h4>`;
                 
                 sorted.slice(1).forEach(o => {
                     const pct = percentages[o.id];
-                    const b = pickBandLabel(interpretationBands, pct);
                     html += `
                     <div class="res-item">
                         <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;">
                             <span><strong>${o.name}</strong></span>
-                            <span style="color:var(--primary); font-weight:600; font-size:15px;">${pct}%${b ? ` • ${b}` : ``}</span>
+                            <span style="color:var(--primary); font-weight:600; font-size:15px;">${pct}%</span>
                         </div>
-                        <div class="res-bar-bg">
-                            <div class="res-bar-fill" style="width:${pct}%"></div>
-                        </div>
+                        <div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div>
                     </div>`;
                 });
-                html += `</div>`; // закрываем блок "Другие варианты"
+                html += `</div>`;
                 html += diagnosticsHtml;
 
             } else {
-                // Dimensional (Профиль)
                 html = `<div style="text-align:center; margin-bottom:25px;"><h2>Ваш профиль</h2></div>`;
                 outcomes.forEach(o => {
                     const pct = percentages[o.id];
-                    const band = pickBandLabel(interpretationBands, pct);
                     html += `<div class="res-item">
                         <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                             <strong>${o.name}</strong>
-                            <span style="color:var(--primary); font-weight:600; font-size:16px;">${pct}%${band ? ` • ${band}` : ``}</span>
+                            <span style="color:var(--primary); font-weight:600; font-size:16px;">${pct}%</span>
                         </div>
-                        <div class="res-bar-bg">
-                            <div class="res-bar-fill" style="width:${pct}%"></div>
-                        </div>
+                        <div class="res-bar-bg"><div class="res-bar-fill" style="width:${pct}%"></div></div>
                     </div>`;
                 });
                 html += diagnosticsHtml;
             }
         }
         
-        // Сохраняем результат в стейт (для шаринга)
         this.state.lastResultName = winningResultName;
 
-        // Кнопки
         const isQuiz = (this.state.mode === 'quiz' || (this.state.mode === 'duel' && this.state.blueprint.testType === 'quiz'));
         const shareBtnText = isQuiz ? "⚔️ Бросить вызов" : "📤 Поделиться результатом";
 
+        // Добавлен класс btn-accent
         html += `
         <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:30px;">
             <button id="saveTestBtn" class="btn" onclick="app.saveTest()" style="flex:1;">💾 Сохранить</button>
-            <button id="shareBtn" class="btn" onclick="app.createShareLink()" style="flex:1; background: var(--accent);">${shareBtnText}</button>
+            <button id="shareBtn" class="btn btn-accent" onclick="app.createShareLink()" style="flex:1;">${shareBtnText}</button>
         </div>`;
         
         container.innerHTML = html;
+
+        // --- MIKRO-INTERACTION: CONFETTI ---
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#6366f1', '#ec4899', '#06b6d4', '#ffd700']
+            });
+            setTimeout(() => {
+                confetti({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 } });
+                confetti({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 } });
+            }, 400);
+        }
     },
 
     async createShareLink() {
@@ -511,14 +493,14 @@ const app = {
         btn.disabled = true;
 
         try {
-            const isQuiz = (this.state.blueprint.testType === 'quiz'); // Смотрим на тип теста, а не режим
+            const isQuiz = (this.state.blueprint.testType === 'quiz'); 
             const score = this.state.quizScore;
-            const name = prompt("Твое имя:", "Аноним") || "Аноним";
+            const name = prompt("Твое имя (для отображения в дуэли):", "Аноним") || "Аноним";
 
             const payload = { 
                 h: name, 
                 s: (isQuiz ? score : 0), 
-                r: (isQuiz ? null : this.state.lastResultName), // Передаем результат автора для psy
+                r: (isQuiz ? null : this.state.lastResultName),
                 t: this.state.blueprint, 
                 q: this.state.questions 
             };
@@ -537,13 +519,19 @@ const app = {
 
             if (!response.ok) throw new Error('API Error');
             const data = await response.json();
+            const tinyUrl = data.data.tiny_url;
             
-            const msg = isQuiz ? "Ссылка на дуэль готова:" : "Ссылка на тест готова:";
-            prompt(msg, data.data.tiny_url);
+            // --- UX IMPROVEMENT: CLIPBOARD + TOAST ---
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(tinyUrl);
+                this.showToast("Ссылка скопирована! Отправь другу 🚀");
+            } else {
+                prompt("Скопируй ссылку:", tinyUrl);
+            }
 
         } catch (e) {
             console.error(e);
-            alert("Ошибка создания ссылки!");
+            this.showToast("Ошибка создания ссылки 😢");
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -554,8 +542,6 @@ const app = {
         const theme = this.state.blueprint.theme || document.getElementById('themeInput').value || "Тест";
         let shortUrl = null;
 
-        // Пытаемся аккуратно сгенерировать короткую ссылку, как в "Поделиться/Дуэль".
-        // Если что-то пойдет не так — просто сохраняем тест без ссылки.
         try {
             if (typeof LZString !== 'undefined' && TINY_TOKEN) {
                 const isQuiz = (this.state.blueprint.testType === 'quiz');
@@ -590,8 +576,9 @@ const app = {
             console.warn("Short link generation failed (saveTest):", e);
         }
 
-        const name = Storage.save(this.state.blueprint, this.state.questions, theme, shortUrl);
-        alert(`Тест сохранен!`);
+        Storage.save(this.state.blueprint, this.state.questions, theme, shortUrl);
+        this.showToast("Тест сохранен в библиотеку! 💾");
+        
         const btn = document.getElementById('saveTestBtn');
         if (btn) {
             btn.innerText = "✅ Сохранено";
@@ -604,7 +591,6 @@ const app = {
         if(!test) return;
         this.state.blueprint = test.blueprint;
         this.state.questions = test.questions;
-        // Восстанавливаем режим на основе типа теста
         this.state.mode = (test.blueprint.testType === 'quiz') ? 'quiz' : 'psy';
         
         this.state.step = 0;
