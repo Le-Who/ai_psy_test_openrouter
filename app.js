@@ -398,18 +398,16 @@ const app = {
         } else {
             // 2. ПСИХОЛОГИЧЕСКИЙ ТЕСТ
             const scores = {};
-            const maxPossible = {};
-            const minPossible = {};
             const scaleProfile = this.state.blueprint.scaleProfile || null;
             const baseScoreMap = scaleProfile && scaleProfile.baseScoreMap ? scaleProfile.baseScoreMap : null;
             const interpretationBands = scaleProfile && scaleProfile.interpretationBands ? scaleProfile.interpretationBands : null;
-            
-            // Структурные метрики по outcomes (для диагностики)
+
+            // Структурные метрики + потенциалы вычисляем ДЕТЕРМИНИРОВАННО (не доверяем модели)
+            const potential = {};
             const structure = {};
             outcomes.forEach(o => {
                 scores[o.id] = 0;
-                maxPossible[o.id] = 0;
-                minPossible[o.id] = 0;
+                potential[o.id] = { minRaw: 0, maxRaw: 0 };
                 structure[o.id] = {
                     sumAbsWeight: 0,
                     numItems: 0,
@@ -418,38 +416,40 @@ const app = {
                 };
             });
 
+            // Вычисляем реальные minRaw/maxRaw и структуру
             this.state.questions.forEach((q, idx) => {
                 const ans = this.state.answers[idx] !== undefined ? this.state.answers[idx] : 3;
                 const baseScore = getBaseScore(ans, baseScoreMap);
-                
-                if (q.mapping) {
-                    const mappingLen = q.mapping.length;
-                    q.mapping.forEach(m => {
-                        if (scores[m.outcomeId] !== undefined) {
-                            const weight = m.weight || 1;
-                            const polarity = weight > 0 ? 1 : -1;
-                            const finalScore = polarity === 1 ? baseScore : (10 - baseScore);
-                            
-                            const absW = Math.abs(weight);
-                            scores[m.outcomeId] += finalScore * absW;
-                            minPossible[m.outcomeId] += 0;
-                            maxPossible[m.outcomeId] += 10 * absW;
+                if (!q.mapping) return;
+                const mappingLen = q.mapping.length;
+                q.mapping.forEach(m => {
+                    if (scores[m.outcomeId] === undefined) return;
+                    const weight = m.weight || 1;
+                    const absW = Math.abs(weight);
+                    const polarity = weight > 0 ? 1 : -1;
+                    const finalScore = polarity === 1 ? baseScore : (10 - baseScore);
 
-                            const s = structure[m.outcomeId];
-                            s.sumAbsWeight += absW;
-                            s.numItems += 1;
-                            if (weight < 0) s.numReverseItems += 1;
-                            if (mappingLen === 2) s.numTwoOutcomeItems += 1;
-                        }
-                    });
-                }
+                    // Счёт на основе ответов
+                    scores[m.outcomeId] += finalScore * absW;
+
+                    // Потенциал по вопросу: 0..10 * |w| (reverse — тоже 0..10)
+                    potential[m.outcomeId].minRaw += 0;
+                    potential[m.outcomeId].maxRaw += 10 * absW;
+
+                    // Структура
+                    const s = structure[m.outcomeId];
+                    s.sumAbsWeight += absW;
+                    s.numItems += 1;
+                    if (weight < 0) s.numReverseItems += 1;
+                    if (mappingLen === 2) s.numTwoOutcomeItems += 1;
+                });
             });
 
+            // Нормализация: только на наших потенциалах (никаких minRaw/maxRaw от LLM)
             const percentages = {};
             outcomes.forEach(o => {
-                const pot = scaleProfile && scaleProfile.outcomePotential ? scaleProfile.outcomePotential[o.id] : null;
-                const minRaw = (pot && typeof pot.minRaw === 'number') ? pot.minRaw : minPossible[o.id];
-                const maxRaw = (pot && typeof pot.maxRaw === 'number') ? pot.maxRaw : maxPossible[o.id];
+                const minRaw = potential[o.id].minRaw;
+                const maxRaw = potential[o.id].maxRaw;
                 const denom = (maxRaw - minRaw);
                 if (denom > 0) {
                     percentages[o.id] = Math.max(0, Math.min(100, Math.round(((scores[o.id] - minRaw) / denom) * 100)));
@@ -458,14 +458,20 @@ const app = {
                 }
             });
 
-            // Диагностика
+            // Диагностика (опирается только на локальные расчёты; qualityChecks показываем как текст, если есть)
             let diagnosticsHtml = '';
-            if (scaleProfile) {
+            {
+                const qcText = scaleProfile && scaleProfile.qualityChecks ? (() => {
+                    try { return JSON.stringify(scaleProfile.qualityChecks, null, 2); }
+                    catch { return String(scaleProfile.qualityChecks); }
+                })() : null;
+
                 diagnosticsHtml += `<div class="diag-card">
                     <details>
                         <summary class="diag-summary">🔬 Диагностика шкал (для автора)</summary>
-                        <div class="diag-body">`;
-                diagnosticsHtml += `<div class="diag-outcomes">`;
+                        <div class="diag-body">
+                            <div class="diag-outcomes">`;
+
                 outcomes.forEach(o => {
                     const pct = percentages[o.id] ?? 0;
                     const band = pickBandLabel(interpretationBands, pct);
@@ -486,7 +492,16 @@ const app = {
                             </div>
                         </div>`;
                 });
-                diagnosticsHtml += `</div></div></details></div>`;
+
+                diagnosticsHtml += `</div>`;
+                if (qcText) {
+                    diagnosticsHtml += `
+                        <div class="diag-qc">
+                            <div class="diag-qc-title">qualityChecks (self-report LLM)</div>
+                            <pre class="diag-code">${qcText}</pre>
+                        </div>`;
+                }
+                diagnosticsHtml += `</div></details></div>`;
             }
 
             if (this.state.blueprint.testType !== 'dimensional') {
