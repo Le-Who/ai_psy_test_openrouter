@@ -401,7 +401,7 @@ const PROMPT_TEXTS = {
     "name": "Краткое название конструкта (например: \"Экстраверсия-Интроверсия\")",
     "theoreticalBackground": "1–3 предложения, зачем измерять этот конструкт и на какие подходы он опирается (Big Five, когнитивная психология и т.п.).",
     "targetPopulation": "Кто проходит тест (например: \"Взрослые 18–65 лет, широкой аудитории\").",
-    "expectedOutcomeCount": 2
+    "expectedOutcomeCount": 3-7
   },
   ...
 }
@@ -488,9 +488,9 @@ const PROMPT_TEXTS = {
 
 Рекомендации:
 - Если указан QUESTIONS_COUNT во входящем тексте, используй его как фактическое totalQuestions, игнорируя значение totalQuestions в blueprint.
-- малый тест: 6–10 вопросов;
-- средний: 10–15;
-- максимальный: до ~20 (иначе лучше батчить).
+- малый тест: 5–10 вопросов;
+- средний: 10–30;
+- максимальный: до ~69.
 
 ====================================================
 # 7. ЧЕКПОИНТЫ КАЧЕСТВА (qualityCheckpoints)
@@ -542,7 +542,7 @@ const PROMPT_TEXTS = {
     "name": "...",
     "theoreticalBackground": "...",
     "targetPopulation": "...",
-    "expectedOutcomeCount": 3
+    "expectedOutcomeCount": 3-7
   },
 
   "outcomes": [
