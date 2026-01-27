@@ -5,8 +5,8 @@ const CONFIG = {
     openrouter: {
       endpoint: 'https://openrouter.ai/api/v1/chat/completions',
       models: {
-        architect: 'x-ai/grok-4.1-mini',
-        generator: 'x-ai/grok-4.1-mini'
+        architect: 'x-ai/grok-4.1-fast',
+        generator: 'x-ai/grok-4.1-fast'
       },
       headers: (key) => ({
         'Authorization': `Bearer ${key}`,
@@ -487,6 +487,7 @@ const PROMPT_TEXTS = {
 }
 
 Рекомендации:
+- Если указан QUESTIONS_COUNT во входящем тексте, используй его как фактическое totalQuestions, игнорируя значение totalQuestions в blueprint.
 - малый тест: 6–10 вопросов;
 - средний: 10–15;
 - максимальный: до ~20 (иначе лучше батчить).
@@ -519,7 +520,8 @@ const PROMPT_TEXTS = {
    - Внутри outcome нет фасетов‑двойников.
    - 1–2 фасета помечены как discriminators.
 3) Questions requirements:
-   - totalQuestions адекватно теме (обычно 6–20).
+   - totalQuestions адекватно теме (обычно 5–69).
+   - Если указан QUESTIONS_COUNT во входящем тексте, используй его как фактическое totalQuestions, игнорируя значение totalQuestions в blueprint.
    - reverseItems примерно 30–40% от totalQuestions.
    - dualOutcomeItems не более 30% от totalQuestions.
 4) Реализуемость:
@@ -728,7 +730,14 @@ reverseCount ≈ round(totalQuestions * 0.33)
 1) Прочитай blueprint:
    - testType, constructDefinition;
    - outcomes, facets, discriminators;
-   - questionRequirements (totalQuestions, reverseItems, dualOutcomeItems).
+   - questionRequirements (totalQuestions, reverseItems, dualOutcomeItems);
+   Если во входящем тексте присутствует строка
+    "QUESTIONS_COUNT: N"
+    (где N — целое число), то
+    - ты обязан сгенерировать РОВНО N вопросов,
+    - даже если questionRequirements.totalQuestions в blueprint предлагает другое число.
+    Если N выходит за разумные пределы (меньше 5 или больше 69), ты всё равно генерируешь, но можешь кратко отметить это во внутреннем summary в scaleProfile.
+    Если указан QUESTIONS_COUNT во входящем тексте, используй его как фактическое totalQuestions, игнорируя значение totalQuestions в blueprint.
 
 2) Для каждого outcome:
    - составь ментальный образ человека с высоким и низким уровнем черты;
