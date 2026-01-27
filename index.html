@@ -135,22 +135,23 @@
 
                 <!-- PSY (Likert 1-5) -->
                 <div id="psyContainer" class="likert-grid">
-                    <div class="likert-opt" onclick="app.answer(1)">
-                        <span>1 🤬</span> <span>Нет</span>
-                    </div>
-                    <div class="likert-opt" onclick="app.answer(2)">
-                        <span>2 👎</span>
-                    </div>
-                    <div class="likert-opt" onclick="app.answer(3)">
-                        <span>3 😐</span>
-                    </div>
-                    <div class="likert-opt" onclick="app.answer(4)">
-                        <span>4 👍</span>
-                    </div>
-                    <div class="likert-opt" onclick="app.answer(5)">
-                        <span>5 😍</span> <span>Да</span>
-                    </div>
+                  <div class="likert-opt" data-value="1">
+                    <span>1</span><span>Совсем не про меня</span>
+                  </div>
+                  <div class="likert-opt" data-value="2">
+                    <span>2</span><span>Скорее не согласен</span>
+                  </div>
+                  <div class="likert-opt" data-value="3">
+                    <span>3</span><span>Нейтрально</span>
+                  </div>
+                  <div class="likert-opt" data-value="4">
+                    <span>4</span><span>Скорее согласен</span>
+                  </div>
+                  <div class="likert-opt" data-value="5">
+                    <span>5</span><span>Очень про меня</span>
+                  </div>
                 </div>
+
 
                 <!-- QUIZ (Grid) -->
                 <div id="quizContainer" class="quiz-grid" style="display:none;"></div>
