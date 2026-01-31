@@ -7,6 +7,7 @@
 const Storage = {
     KEY: 'ai_tests_library_v2',
     _cache: null,
+    _htmlCache: null,
 
     /**
      * Получить весь список тестов
@@ -56,6 +57,7 @@ const Storage = {
         // Добавляем в начало списка
         library.unshift(newTest);
         localStorage.setItem(this.KEY, JSON.stringify(library));
+        this._htmlCache = null;
         
         return finalName;
     },
@@ -67,21 +69,25 @@ const Storage = {
         const list = this.getAll();
         this._cache = list.filter(t => t.id !== id);
         localStorage.setItem(this.KEY, JSON.stringify(this._cache));
+        this._htmlCache = null;
     },
 
     /**
      * Генерация HTML для списка библиотеки (UI)
      */
     renderLibraryHTML() {
+        if (this._htmlCache) return this._htmlCache;
+
         const list = this.getAll();
         if (list.length === 0) {
-            return `<div style="text-align:center; padding:40px; color:var(--text-muted);">
+            this._htmlCache = `<div style="text-align:center; padding:40px; color:var(--text-muted);">
                 <div style="font-size:40px; margin-bottom:10px;">📭</div>
                 Библиотека пуста.<br>Создайте свой первый тест!
             </div>`;
+            return this._htmlCache;
         }
 
-        return list.map(test => {
+        this._htmlCache = list.map(test => {
             // Определяем иконку по типу теста (quiz vs psy)
             // Если поле testType отсутствует (старые тесты), считаем psy
             const type = test.blueprint.testType || 'categorical'; 
@@ -125,6 +131,7 @@ const Storage = {
                 </div>
             </div>`;
         }).join('');
+        return this._htmlCache;
     }
 };
 
@@ -133,6 +140,7 @@ if (typeof window !== 'undefined') {
     window.addEventListener('storage', (e) => {
         if (e.key === Storage.KEY) {
             Storage._cache = null;
+            Storage._htmlCache = null;
         }
     });
 }
