@@ -501,10 +501,17 @@ NOTES: ${notes || "нет"}`;
       psyDiv.style.display = "grid";
       quizDiv.style.display = "none";
       const btns = psyDiv.querySelectorAll(".likert-opt");
-      btns.forEach((b) => b.classList.remove("selected"));
+      btns.forEach((b) => {
+        b.classList.remove("selected");
+        b.setAttribute("aria-pressed", "false");
+      });
       const prevAns = this.state.answers[this.state.step];
       if (prevAns !== undefined) {
-        btns[prevAns - 1]?.classList.add("selected");
+        const selectedBtn = btns[prevAns - 1];
+        if (selectedBtn) {
+          selectedBtn.classList.add("selected");
+          selectedBtn.setAttribute("aria-pressed", "true");
+        }
       }
     }
   },
@@ -522,8 +529,14 @@ NOTES: ${notes || "нет"}`;
       document
         .getElementById("psyContainer")
         .querySelectorAll(".likert-opt");
-    btns.forEach((b) => b.classList.remove("selected"));
-    if (btns[val - 1]) btns[val - 1].classList.add("selected");
+    btns.forEach((b) => {
+      b.classList.remove("selected");
+      b.setAttribute("aria-pressed", "false");
+    });
+    if (btns[val - 1]) {
+      btns[val - 1].classList.add("selected");
+      btns[val - 1].setAttribute("aria-pressed", "true");
+    }
     setTimeout(() => this.nextQuestion(), 300);
   },
 

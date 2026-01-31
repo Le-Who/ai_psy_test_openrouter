@@ -20,7 +20,7 @@
             <p>Работает на хлопьях с молоком 🥣</p>
             </div>
             
-            <button class="theme-toggle-btn" onclick="toggleThemeMenu()" title="Темы">🎨</button>
+            <button class="theme-toggle-btn" onclick="toggleThemeMenu()" title="Темы" aria-label="Переключить тему">🎨</button>
             <div class="theme-menu" id="themeMenu">
                 <div class="theme-opt" onclick="setTheme('light')"><div class="theme-circle" style="background: #fff; border: 1px solid #ddd;"></div> Светленькая</div>
                 <div class="theme-opt" onclick="setTheme('dark')"><div class="theme-circle" style="background: #1e293b;"></div> Темненькая</div>
@@ -135,21 +135,21 @@
 
                 <!-- PSY (Likert 1-5) -->
                 <div id="psyContainer" class="likert-grid">
-                  <div class="likert-opt" data-value="1">
+                  <button type="button" class="likert-opt" data-value="1" aria-label="Оценка 1: Совсем не про меня" aria-pressed="false">
                     <span>1</span><span>Совсем не про меня 🤬</span>
-                  </div>
-                  <div class="likert-opt" data-value="2">
+                  </button>
+                  <button type="button" class="likert-opt" data-value="2" aria-label="Оценка 2: Скорее не согласен" aria-pressed="false">
                     <span>2</span><span>Скорее не согласен 👎</span>
-                  </div>
-                  <div class="likert-opt" data-value="3">
+                  </button>
+                  <button type="button" class="likert-opt" data-value="3" aria-label="Оценка 3: Нейтрально" aria-pressed="false">
                     <span>3</span><span>Нейтрально 😐</span>
-                  </div>
-                  <div class="likert-opt" data-value="4">
+                  </button>
+                  <button type="button" class="likert-opt" data-value="4" aria-label="Оценка 4: Скорее согласен" aria-pressed="false">
                     <span>4</span><span>Скорее согласен 👍</span>
-                  </div>
-                  <div class="likert-opt" data-value="5">
+                  </button>
+                  <button type="button" class="likert-opt" data-value="5" aria-label="Оценка 5: Очень про меня" aria-pressed="false">
                     <span>5</span><span>Очень про меня 😍</span>
-                  </div>
+                  </button>
                 </div>
 
 
@@ -208,7 +208,7 @@
     </script>
 
     <!-- ОВЕРЛЕЙ ЗАГРУЗКИ (Должен быть в конце body) -->
-    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white;">
+    <div id="loadingOverlay" role="dialog" aria-modal="true" aria-labelledby="loadingText" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white;">
         <div class="loader" style="font-size: 50px; margin-bottom: 20px;">🐒</div>
         <h2 id="loadingText">Думаем...</h2>
     </div>
