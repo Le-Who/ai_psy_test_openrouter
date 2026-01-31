@@ -4,6 +4,8 @@
 
 // --- API CLIENT ---
 const api = {
+    schemaCache: new WeakMap(),
+
     detectProvider(key) {
         return key.startsWith('AIza') ? 'gemini' : 'openrouter';
     },
@@ -67,7 +69,16 @@ const api = {
     async callGemini(sys, user, schema, type, key) {
         const model = CONFIG.providers.gemini.models[type];
         const url = `${CONFIG.providers.gemini.endpoint}${model}:generateContent?key=${key}`;
-        const prompt = `${sys}\n\nОТВЕТЬ СТРОГО В FORMAT JSON:\n${JSON.stringify(schema)}\n\nЗАДАЧА: ${user}`;
+
+        let schemaStr;
+        if (this.schemaCache.has(schema)) {
+            schemaStr = this.schemaCache.get(schema);
+        } else {
+            schemaStr = JSON.stringify(schema);
+            this.schemaCache.set(schema, schemaStr);
+        }
+
+        const prompt = `${sys}\n\nОТВЕТЬ СТРОГО В FORMAT JSON:\n${schemaStr}\n\nЗАДАЧА: ${user}`;
 
         const res = await fetch(url, {
             method: 'POST',
