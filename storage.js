@@ -6,13 +6,16 @@
 
 const Storage = {
     KEY: 'ai_tests_library_v2',
+    _cache: null,
 
     /**
      * Получить весь список тестов
      */
     getAll() {
+        if (this._cache) return this._cache;
         const data = localStorage.getItem(this.KEY);
-        return data ? JSON.parse(data) : [];
+        this._cache = data ? JSON.parse(data) : [];
+        return this._cache;
     },
 
     /**
@@ -62,8 +65,8 @@ const Storage = {
      */
     delete(id) {
         const list = this.getAll();
-        const newList = list.filter(t => t.id !== id);
-        localStorage.setItem(this.KEY, JSON.stringify(newList));
+        this._cache = list.filter(t => t.id !== id);
+        localStorage.setItem(this.KEY, JSON.stringify(this._cache));
     },
 
     /**
@@ -124,3 +127,12 @@ const Storage = {
         }).join('');
     }
 };
+
+// Listen for updates from other tabs to invalidate cache
+if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (e) => {
+        if (e.key === Storage.KEY) {
+            Storage._cache = null;
+        }
+    });
+}
