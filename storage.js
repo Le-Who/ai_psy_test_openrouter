@@ -7,7 +7,7 @@
 const Storage = {
     KEY: 'ai_tests_library_v2',
     _cache: null,
-    _htmlCache: null,
+    _htmlItems: null, // Array of HTML strings for each test card
 
     /**
      * Получить весь список тестов
@@ -25,6 +25,54 @@ const Storage = {
     getById(id) {
         const list = this.getAll();
         return list.find(t => t.id === id);
+    },
+
+    /**
+     * Helper: Generate HTML for a single test item
+     */
+    _renderTestItem(test) {
+        // Определяем иконку по типу теста (quiz vs psy)
+        // Если поле testType отсутствует (старые тесты), считаем psy
+        const type = test.blueprint.testType || 'categorical';
+        const isQuiz = (type === 'quiz');
+        const icon = isQuiz ? '🧠' : '🧩';
+
+        const count = test.questions ? test.questions.length : 0;
+
+        const shortUrlBlock = test.shortUrl ? `
+            <div style="margin-top:6px; font-size: 12px; color: var(--text-muted);">
+                🔗 Короткая ссылка:&nbsp;
+                <button class="btn-text" style="padding:0; font-size:12px;" onclick="prompt('Ссылка на тест:', this.dataset.url)" data-url="${Utils.escapeHtml(test.shortUrl)}">
+                    открыть / скопировать
+                </button>
+            </div>` : '';
+
+        return `
+        <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+            <div style="font-size: 24px; flex-shrink: 0;">${icon}</div>
+
+            <div style="flex-grow: 1; min-width: 0;"> <!-- min-width fix for flexbox truncation -->
+                <h3 style="margin: 0 0 5px; font-size: 16px; line-height: 1.4; word-wrap: break-word;">${Utils.escapeHtml(test.theme)}</h3>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                    ${Utils.escapeHtml(test.date)} • ${count} вопросов
+                </div>
+                ${shortUrlBlock}
+            </div>
+
+            <div style="display:flex; gap:10px; align-items: center; flex-shrink: 0;">
+                <button class="btn" onclick="app.loadSavedTest('${test.id}')"
+                    style="width: auto; padding: 8px 16px; font-size: 14px; white-space: nowrap;">
+                    ▶ Начать
+                </button>
+                <button onclick="app.deleteTest('${test.id}')"
+                    style="background:none; border:none; cursor:pointer; font-size:18px; opacity:0.5; padding: 5px; color: var(--text-muted); transition: color 0.2s;"
+                    onmouseover="this.style.color='var(--danger)'"
+                    onmouseout="this.style.color='var(--text-muted)'"
+                    title="Удалить">
+                    🗑
+                </button>
+            </div>
+        </div>`;
     },
 
     /**
@@ -57,7 +105,11 @@ const Storage = {
         // Добавляем в начало списка
         library.unshift(newTest);
         localStorage.setItem(this.KEY, JSON.stringify(library));
-        this._htmlCache = null;
+
+        // OPTIMIZATION: Update htmlItems cache incrementally
+        if (this._htmlItems) {
+            this._htmlItems.unshift(this._renderTestItem(newTest));
+        }
         
         return finalName;
     },
@@ -67,71 +119,38 @@ const Storage = {
      */
     delete(id) {
         const list = this.getAll();
-        this._cache = list.filter(t => t.id !== id);
-        localStorage.setItem(this.KEY, JSON.stringify(this._cache));
-        this._htmlCache = null;
+        const index = list.findIndex(t => t.id === id);
+
+        if (index > -1) {
+            // Remove from data cache
+            list.splice(index, 1);
+            localStorage.setItem(this.KEY, JSON.stringify(list));
+
+            // OPTIMIZATION: Remove from htmlItems cache incrementally
+            if (this._htmlItems) {
+                this._htmlItems.splice(index, 1);
+            }
+        }
     },
 
     /**
      * Генерация HTML для списка библиотеки (UI)
      */
     renderLibraryHTML() {
-        if (this._htmlCache) return this._htmlCache;
-
         const list = this.getAll();
         if (list.length === 0) {
-            this._htmlCache = `<div style="text-align:center; padding:40px; color:var(--text-muted);">
+            return `<div style="text-align:center; padding:40px; color:var(--text-muted);">
                 <div style="font-size:40px; margin-bottom:10px;">📭</div>
                 Библиотека пуста.<br>Создайте свой первый тест!
             </div>`;
-            return this._htmlCache;
         }
 
-        this._htmlCache = list.map(test => {
-            // Определяем иконку по типу теста (quiz vs psy)
-            // Если поле testType отсутствует (старые тесты), считаем psy
-            const type = test.blueprint.testType || 'categorical'; 
-            const isQuiz = (type === 'quiz');
-            const icon = isQuiz ? '🧠' : '🧩';
-            
-            const count = test.questions ? test.questions.length : 0;
-            
-            const shortUrlBlock = test.shortUrl ? `
-                <div style="margin-top:6px; font-size: 12px; color: var(--text-muted);">
-                    🔗 Короткая ссылка:&nbsp;
-                    <button class="btn-text" style="padding:0; font-size:12px;" onclick="prompt('Ссылка на тест:', this.dataset.url)" data-url="${Utils.escapeHtml(test.shortUrl)}">
-                        открыть / скопировать
-                    </button>
-                </div>` : '';
+        // Lazy load html cache
+        if (!this._htmlItems || this._htmlItems.length !== list.length) {
+             this._htmlItems = list.map(test => this._renderTestItem(test));
+        }
 
-            return `
-            <div class="card" style="padding: 20px; display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                <div style="font-size: 24px; flex-shrink: 0;">${icon}</div>
-                
-                <div style="flex-grow: 1; min-width: 0;"> <!-- min-width fix for flexbox truncation -->
-                    <h3 style="margin: 0 0 5px; font-size: 16px; line-height: 1.4; word-wrap: break-word;">${Utils.escapeHtml(test.theme)}</h3>
-                    <div style="font-size: 12px; color: var(--text-muted);">
-                        ${Utils.escapeHtml(test.date)} • ${count} вопросов
-                    </div>
-                    ${shortUrlBlock}
-                </div>
-
-                <div style="display:flex; gap:10px; align-items: center; flex-shrink: 0;">
-                    <button class="btn" onclick="app.loadSavedTest('${test.id}')" 
-                        style="width: auto; padding: 8px 16px; font-size: 14px; white-space: nowrap;">
-                        ▶ Начать
-                    </button>
-                    <button onclick="app.deleteTest('${test.id}')" 
-                        style="background:none; border:none; cursor:pointer; font-size:18px; opacity:0.5; padding: 5px; color: var(--text-muted); transition: color 0.2s;"
-                        onmouseover="this.style.color=var(--danger)" 
-                        onmouseout="this.style.color='var(--text-muted)'"
-                        title="Удалить">
-                        🗑
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
-        return this._htmlCache;
+        return this._htmlItems.join('');
     }
 };
 
@@ -140,7 +159,7 @@ if (typeof window !== 'undefined') {
     window.addEventListener('storage', (e) => {
         if (e.key === Storage.KEY) {
             Storage._cache = null;
-            Storage._htmlCache = null;
+            Storage._htmlItems = null;
         }
     });
 }
