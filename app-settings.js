@@ -979,5 +979,4 @@ ${PROMPT_TEXTS.generator_quiz}
 console.log("App Settings Loaded v6.5 Final");
 
 // Secrets
-// Please provide your TinyURL API token here
-const TINYTOKEN = "";
+const TINYTOKEN = "lBjFvZGQQmPD56gcBpQBgdyMlezZCxwNShVIlh9wA3W4HFtDOI0418CnoXBx";
