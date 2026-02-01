@@ -45,8 +45,8 @@
                     </div>
                 </div>
 
-                <form onsubmit="app.start(event)">
-                    <label>Тема</label>
+                <form onsubmit="app.start(event)" novalidate>
+                    <label>Тема <span class="text-danger" style="margin-left:3px;" aria-hidden="true">*</span></label>
                     <input type="text" id="themeInput" placeholder="Например: Какой ты хлебушек?" required>
 
                     <label>Уточнения <span style="font-weight:normal; opacity:0.7; font-size:12px;">(опционально)</span></label>
@@ -80,7 +80,7 @@
                         </div>
                     </div>
 
-                    <label>API Ключ</label>
+                    <label>API Ключ <span class="text-danger" style="margin-left:3px;" aria-hidden="true">*</span></label>
                     <input type="password" id="apiKeyInput" placeholder="sk-or-... / AIza..." required>
 
                     <button type="submit" class="btn primary-btn" style="margin-top: 25px;">

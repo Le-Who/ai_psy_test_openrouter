@@ -268,11 +268,21 @@ const app = {
     const apiKey = document
       .getElementById("apiKeyInput")
       .value.trim();
-    const theme = document.getElementById("themeInput").value;
+    const theme = document.getElementById("themeInput").value.trim();
     const notes = document.getElementById("notesInput").value;
     const count = document.getElementById("qCountInput").value;
 
-    if (!apiKey) return alert("API ключ не указан!");
+    if (!theme) {
+      this.showToast("Введите тему теста! 📝");
+      document.getElementById("themeInput").focus();
+      return;
+    }
+
+    if (!apiKey) {
+      this.showToast("API ключ обязателен! 🔑");
+      document.getElementById("apiKeyInput").focus();
+      return;
+    }
     localStorage.setItem("user_api_key", apiKey);
 
     const isQuiz = this.state.mode === "quiz";
