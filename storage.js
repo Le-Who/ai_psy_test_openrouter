@@ -99,7 +99,7 @@ const Storage = {
             const shortUrlBlock = test.shortUrl ? `
                 <div style="margin-top:6px; font-size: 12px; color: var(--text-muted);">
                     🔗 Короткая ссылка:&nbsp;
-                    <button class="btn-text" style="padding:0; font-size:12px;" onclick="prompt('Ссылка на тест:', '${test.shortUrl}')">
+                    <button class="btn-text" style="padding:0; font-size:12px;" onclick="prompt('Ссылка на тест:', this.dataset.url)" data-url="${Utils.escapeHtml(test.shortUrl)}">
                         открыть / скопировать
                     </button>
                 </div>` : '';
@@ -109,9 +109,9 @@ const Storage = {
                 <div style="font-size: 24px; flex-shrink: 0;">${icon}</div>
                 
                 <div style="flex-grow: 1; min-width: 0;"> <!-- min-width fix for flexbox truncation -->
-                    <h3 style="margin: 0 0 5px; font-size: 16px; line-height: 1.4; word-wrap: break-word;">${test.theme}</h3>
+                    <h3 style="margin: 0 0 5px; font-size: 16px; line-height: 1.4; word-wrap: break-word;">${Utils.escapeHtml(test.theme)}</h3>
                     <div style="font-size: 12px; color: var(--text-muted);">
-                        ${test.date} • ${count} вопросов
+                        ${Utils.escapeHtml(test.date)} • ${count} вопросов
                     </div>
                     ${shortUrlBlock}
                 </div>

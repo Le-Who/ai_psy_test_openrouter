@@ -1,116 +1,8 @@
 // AI Universal Test Generator - Core Logic v6.0 Final
 // UI/UX Polish, Features: Glassmorphism, Clipboard API, Confetti, Toast Notifications
 
-const TINYTOKEN = "lBjFvZGQQmPD56gcBpQBgdyMlezZCxwNShVIlh9wA3W4HFtDOI0418CnoXBx";
-
-const api = {
-  detectProvider(key) {
-    return key.startsWith("AIza") ? "gemini" : "openrouter";
-  },
-
-  safeParseJSON(text) {
-    if (!text || typeof text !== "string") return text;
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      // Попытка вытащить JSON из markdown/текста
-      const match = text.match(/\{[\s\S]*\}$/);
-      if (match) {
-        try {
-          return JSON.parse(match[0]);
-        } catch (e2) {}
-      }
-      const mdMatch = text.match(/```json([\s\S]*?)```/);
-      if (mdMatch) {
-        try {
-          return JSON.parse(mdMatch[1]);
-        } catch (e3) {}
-      }
-      throw new Error("JSON Parse Error");
-    }
-  },
-
-  async call(task, prompt, schema, key) {
-    const provider = this.detectProvider(key);
-    const sysPrompt = PROMPTS[provider][task];
-    console.log("API provider", provider, "task", task);
-
-    // task: 'architect_psy', 'generator_psy', 'architect_quiz', 'generator_quiz'
-    const isArchitect = task.startsWith("architect_");
-    const mode = isArchitect ? "architect" : "generator";
-
-    if (provider === "gemini") {
-      return this.callGemini(sysPrompt, prompt, schema, mode, key);
-    }
-    return this.callOpenRouter(sysPrompt, prompt, schema, mode, key);
-  },
-
-  async callOpenRouter(sys, user, schema, type, key) {
-    const model = CONFIG.providers.openrouter.models[type];
-    const messages = [
-      { role: "system", content: sys },
-      {
-        role: "user",
-        content:
-          "Сгенерируй ответ в формате строго валидного JSON по этой JSON Schema:\n\n" +
-          JSON.stringify(schema, null, 2) +
-          "\n\n" +
-          user
-      }
-    ];
-
-    const res = await fetch(CONFIG.providers.openrouter.endpoint, {
-      method: "POST",
-      headers: CONFIG.providers.openrouter.headers(key),
-      body: JSON.stringify({
-        model,
-        messages,
-        response_format: { type: "json_object" },
-        temperature: 0.7
-      })
-    });
-
-    const data = await res.json();
-    return this.safeParseJSON(data.choices[0].message.content);
-  },
-
-  async callGemini(sys, user, schema, type, key) {
-    const model = CONFIG.providers.gemini.models[type];
-    const temperature = type === "architect" ? 0.5 : 0.7;
-
-    const prompt =
-      sys +
-      "\n\n" +
-      "Сгенерируй ответ в формате строго валидного JSON по этой JSON Schema:\n\n" +
-      JSON.stringify(schema, null, 2) +
-      "\n\n" +
-      user;
-
-    const res = await fetch(
-      CONFIG.providers.gemini.endpoint +
-        model +
-        ":generateContent?key=" +
-        key,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature
-            // при переходе на новый API можно добавить:
-            // responseMimeType: "application/json"
-          }
-        })
-      }
-    );
-
-    const data = await res.json();
-    return this.safeParseJSON(
-      data.candidates[0].content.parts[0].text
-    );
-  }
-};
+// TINYTOKEN moved to app-settings.js
+// api object moved to api.js
 
 const app = {
   state: {
@@ -284,12 +176,12 @@ const app = {
 
     let desc;
     if (isQuiz) {
-      desc = `<strong style="color:#fff">${this.state.duelHostName}</strong> вызвал(а) тебя на викторину!`;
+      desc = `<strong style="color:#fff">${Utils.escapeHtml(this.state.duelHostName)}</strong> вызвал(а) тебя на викторину!`;
     } else {
       const resultText = this.state.duelHostResultName
-        ? `<strong style="color:var(--accent)">${this.state.duelHostResultName}</strong>`
+        ? `<strong style="color:var(--accent)">${Utils.escapeHtml(this.state.duelHostResultName)}</strong>`
         : "";
-      desc = `<strong style="color:#fff">${this.state.duelHostName}</strong> уже прошёл(ла) этот тест. ${resultText ? "<br>" + resultText : ""}`;
+      desc = `<strong style="color:#fff">${Utils.escapeHtml(this.state.duelHostName)}</strong> уже прошёл(ла) этот тест. ${resultText ? "<br>" + resultText : ""}`;
     }
 
     const dvH1 = dv.querySelector("h1");
@@ -494,7 +386,7 @@ NOTES: ${notes || "нет"}`;
       quizDiv.style.display = "flex";
       let html = "";
       q.options.forEach((opt, idx) => {
-        html += `<button class="quiz-opt" onclick="app.handleQuizAnswer(${idx}, this)">${opt}</button>`;
+        html += `<button class="quiz-opt" onclick="app.handleQuizAnswer(${idx}, this)">${Utils.escapeHtml(opt)}</button>`;
       });
       quizDiv.innerHTML = html;
     } else {
@@ -683,7 +575,7 @@ NOTES: ${notes || "нет"}`;
         }
         duelBlock = `
           <div style="background:rgba(255,255,255,0.1);padding:15px;border-radius:12px;margin:20px 0;border:1px solid rgba(255,255,255,0.2);">
-            <h3 style="margin:0 0 10px;color:${color}">${verdict}</h3>
+            <h3 style="margin:0 0 10px;color:${color}">${Utils.escapeHtml(verdict)}</h3>
             <div style="display:flex;justify-content:space-around;">
               <div>
                 <div><strong>${score}</strong></div>
@@ -691,7 +583,7 @@ NOTES: ${notes || "нет"}`;
               </div>
               <div>
                 <div><strong>${hostScore}</strong></div>
-                <div>${hostName}</div>
+                <div>${Utils.escapeHtml(hostName)}</div>
               </div>
             </div>
           </div>
@@ -703,8 +595,8 @@ NOTES: ${notes || "нет"}`;
           <div style="font-size:14px;color:var(--text-muted);margin-bottom:10px;">Твой результат</div>
           <h1 style="font-size:56px;margin:0;color:var(--primary)">${score} <span style="font-size:24px;color:var(--text-muted)">/ ${total}</span></h1>
           ${duelBlock}
-          <h2 style="margin:15px 0 20px;">${result.name}</h2>
-          <p style="font-size:18px;">${result.description}</p>
+          <h2 style="margin:15px 0 20px;">${Utils.escapeHtml(result.name)}</h2>
+          <p style="font-size:18px;">${Utils.escapeHtml(result.description)}</p>
         </div>
       `;
     } else {
@@ -820,12 +712,12 @@ NOTES: ${notes || "нет"}`;
         diagnosticsHtml += `
           <div class="diag-row">
             <div class="diag-row-main">
-              <div class="diag-title">${o.name}</div>
+              <div class="diag-title">${Utils.escapeHtml(o.name)}</div>
               <div class="diag-sub">
                 <span>${pct}%</span>
                 ${
                   band
-                    ? `<span>${band}</span>`
+                    ? `<span>${Utils.escapeHtml(band)}</span>`
                     : ""
                 }
               </div>
@@ -869,14 +761,14 @@ NOTES: ${notes || "нет"}`;
         html += `
           <div style="text-align:center;padding-bottom:20px;">
             <div style="font-size:12px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Твой ведущий результат</div>
-            <h2 style="font-size:32px;margin:0 0 10px;color:var(--primary)">${win.name}</h2>
-            <p style="font-size:18px;line-height:1.6;">${win.description || ""}</p>
+            <h2 style="font-size:32px;margin:0 0 10px;color:var(--primary)">${Utils.escapeHtml(win.name)}</h2>
+            <p style="font-size:18px;line-height:1.6;">${Utils.escapeHtml(win.description || "")}</p>
             <div style="margin-top:15px;font-size:28px;color:var(--accent);font-weight:bold;">${percentages[
               win.id
             ]}%</div>
             ${
               band
-                ? `<div style="margin-top:8px;color:var(--text-muted);font-weight:600;">${band}</div>`
+                ? `<div style="margin-top:8px;color:var(--text-muted);font-weight:600;">${Utils.escapeHtml(band)}</div>`
                 : ""
             }
           </div>
@@ -889,7 +781,7 @@ NOTES: ${notes || "нет"}`;
           html += `
             <div class="res-item">
               <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px;">
-                <span><strong>${o.name}</strong></span>
+                <span><strong>${Utils.escapeHtml(o.name)}</strong></span>
                 <span style="color:var(--primary);font-weight:600;font-size:15px;">${pct}%</span>
               </div>
               <div class="res-bar-bg">
@@ -923,7 +815,7 @@ NOTES: ${notes || "нет"}`;
           html += `
             <div class="res-item">
               <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
-                <strong>${o.name}</strong>
+                <strong>${Utils.escapeHtml(o.name)}</strong>
                 <span style="color:var(--primary);font-weight:600;font-size:16px;">${pct}%</span>
               </div>
               <div class="res-bar-bg">
@@ -931,7 +823,7 @@ NOTES: ${notes || "нет"}`;
               </div>
               ${
                 interpText
-                  ? `<div style="margin-top:6px;font-size:13px;color:var(--text-muted);">${interpText}</div>`
+                  ? `<div style="margin-top:6px;font-size:13px;color:var(--text-muted);">${Utils.escapeHtml(interpText)}</div>`
                   : ""
               }
             </div>
