@@ -144,6 +144,7 @@ body::before {
     padding: 10px 14px; border-radius: 10px; cursor: pointer;
     font-size: 14px; font-weight: 600; color: var(--text);
     transition: background 0.2s; white-space: nowrap;
+    background: transparent; border: none; font-family: inherit; width: 100%; text-align: left;
 }
 .theme-opt:hover { background: rgba(125,125,125,0.1); }
 .theme-circle { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--border); }
