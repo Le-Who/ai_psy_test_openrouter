@@ -64,10 +64,8 @@ const Storage = {
                     style="width: auto; padding: 8px 16px; font-size: 14px; white-space: nowrap;">
                     ▶ Начать
                 </button>
-                <button onclick="app.deleteTest('${test.id}')"
-                    style="background:none; border:none; cursor:pointer; font-size:18px; opacity:0.5; padding: 5px; color: var(--text-muted); transition: color 0.2s;"
-                    onmouseover="this.style.color='var(--danger)'"
-                    onmouseout="this.style.color='var(--text-muted)'"
+                <button onclick="app.deleteTest('${test.id}', this)"
+                    class="btn-delete"
                     title="Удалить">
                     🗑
                 </button>

@@ -1006,11 +1006,39 @@ NOTES: ${notes || "нет"}`;
     this.setView("test");
   },
 
-  deleteTest(id) {
-    if (confirm("Удалить сохранённый тест?")) {
-      Storage.delete(id);
-      this.openLibrary();
+  deleteTest(id, btn) {
+    // Fallback for calls without button (if any)
+    if (!btn) {
+      if (confirm("Удалить сохранённый тест?")) {
+        Storage.delete(id);
+        this.openLibrary();
+      }
+      return;
     }
+
+    // 2-step confirmation logic
+    if (!btn.dataset.confirm) {
+      btn.dataset.confirm = "true";
+      btn.classList.add("confirming");
+      btn.innerHTML = "Точно?";
+      btn.title = "Нажмите для подтверждения";
+
+      // Reset after 3 seconds
+      setTimeout(() => {
+        if (btn && btn.isConnected) {
+          delete btn.dataset.confirm;
+          btn.classList.remove("confirming");
+          btn.innerHTML = "🗑";
+          btn.title = "Удалить";
+        }
+      }, 3000);
+      return;
+    }
+
+    // Confirmed delete
+    Storage.delete(id);
+    this.openLibrary();
+    this.showToast("Тест удален 🗑");
   },
 
   // =========================
