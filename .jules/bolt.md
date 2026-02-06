@@ -8,3 +8,6 @@
 ## 2024-10-24 - [Inefficient String Escaping in Hot Paths]
 **Learning:** The `escapeHtml` utility used multiple chained `.replace()` calls, causing redundant string traversals. This utility is heavily used in rendering loops (e.g., `renderLibraryHTML`), making it a hidden CPU sink.
 **Action:** Use a single regex replace with a callback for string sanitization functions to ensure O(n) complexity instead of O(n * k) passes.
+## 2026-02-06 - [Inefficient Naming Collision Check]
+**Learning:** `Storage.save` used a `while` loop with `array.some` to check for unique names, resulting in O(N*K) complexity which spiked to ~760ms for 1000 items.
+**Action:** Use a `Set` for O(1) existence checks when validating uniqueness against a large list of items.

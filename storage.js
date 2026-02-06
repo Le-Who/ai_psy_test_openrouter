@@ -85,7 +85,9 @@ const Storage = {
         let finalName = themeName;
         let counter = 2;
 
-        while (library.some(t => t.theme === finalName)) {
+        // OPTIMIZATION: Use Set for O(1) lookup instead of O(N) scan in loop
+        const existingThemes = new Set(library.map(t => t.theme));
+        while (existingThemes.has(finalName)) {
             finalName = `${themeName} (${counter})`;
             counter++;
         }
