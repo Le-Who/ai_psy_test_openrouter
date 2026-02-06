@@ -8,6 +8,7 @@ const Storage = {
     KEY: 'ai_tests_library_v2',
     _cache: null,
     _htmlItems: null, // Array of HTML strings for each test card
+    _renderedHtmlCache: null, // Cache for the full rendered library string
 
     /**
      * Получить весь список тестов
@@ -108,7 +109,16 @@ const Storage = {
 
         // OPTIMIZATION: Update htmlItems cache incrementally
         if (this._htmlItems) {
-            this._htmlItems.unshift(this._renderTestItem(newTest));
+            const newItemHtml = this._renderTestItem(newTest);
+            this._htmlItems.unshift(newItemHtml);
+
+            // Update rendered cache if it exists
+            if (this._renderedHtmlCache) {
+                this._renderedHtmlCache = newItemHtml + this._renderedHtmlCache;
+            }
+        } else {
+             // Force regeneration if htmlItems wasn't ready
+             this._renderedHtmlCache = null;
         }
         
         return finalName;
@@ -130,6 +140,9 @@ const Storage = {
             if (this._htmlItems) {
                 this._htmlItems.splice(index, 1);
             }
+
+            // Invalidate rendered string because removing from middle is complex to patch
+            this._renderedHtmlCache = null;
         }
     },
 
@@ -145,12 +158,18 @@ const Storage = {
             </div>`;
         }
 
+        // Check cache first
+        if (this._renderedHtmlCache) {
+            return this._renderedHtmlCache;
+        }
+
         // Lazy load html cache
         if (!this._htmlItems || this._htmlItems.length !== list.length) {
              this._htmlItems = list.map(test => this._renderTestItem(test));
         }
 
-        return this._htmlItems.join('');
+        this._renderedHtmlCache = this._htmlItems.join('');
+        return this._renderedHtmlCache;
     }
 };
 
@@ -160,6 +179,7 @@ if (typeof window !== 'undefined') {
         if (e.key === Storage.KEY) {
             Storage._cache = null;
             Storage._htmlItems = null;
+            Storage._renderedHtmlCache = null;
         }
     });
 }
