@@ -86,7 +86,11 @@ const Storage = {
         let counter = 2;
 
         // OPTIMIZATION: Use Set for O(1) lookup instead of O(N) scan in loop
-        const existingThemes = new Set(library.map(t => t.theme));
+        // Avoiding library.map() to prevent O(N) array allocation
+        const existingThemes = new Set();
+        for (const t of library) {
+            existingThemes.add(t.theme);
+        }
         while (existingThemes.has(finalName)) {
             finalName = `${themeName} (${counter})`;
             counter++;
