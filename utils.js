@@ -23,3 +23,18 @@ const Utils = {
         });
     }
 };
+
+/**
+ * Toggles password visibility for a given input ID
+ * @param {string} id - The ID of the password input
+ * @param {HTMLElement} btn - The toggle button element
+ */
+window.togglePasswordVisibility = function(id, btn) {
+    const input = document.getElementById(id);
+    if (!input) return;
+
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btn.innerHTML = isPassword ? '🙈' : '👁️';
+    btn.setAttribute('aria-label', isPassword ? 'Скрыть API ключ' : 'Показать API ключ');
+};

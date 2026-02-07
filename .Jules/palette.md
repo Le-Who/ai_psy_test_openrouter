@@ -5,3 +5,7 @@
 ## 2024-05-21 - [Accessible Glassmorphism Menus]
 **Learning:** For glassmorphism menus implemented with `div`s, replacing them with semantic `<button`> tags plus a CSS reset (`background: transparent; border: none; text-align: left`) is the most robust way to add accessibility without breaking the visual design.
 **Action:** Use the `.theme-opt` CSS reset pattern for any new interactive list items in the design system.
+
+## 2025-05-23 - [Input Group Styling]
+**Learning:** Global styles on inputs (like `margin-top`) can break layout when wrapping inputs for icons.
+**Action:** Move spacing properties to the wrapper container (`.input-group`) and reset them on the child input.
