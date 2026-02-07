@@ -186,6 +186,38 @@ input:focus, select:focus, textarea:focus {
 }
 [data-theme="dark"] input:focus { background: rgba(0,0,0,0.4); }
 
+/* INPUT GROUP & PASSWORD TOGGLE */
+.input-group {
+    position: relative;
+    width: 100%;
+    margin-top: 8px;
+}
+.input-group input {
+    margin-top: 0;
+    padding-right: 45px;
+}
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--text-muted);
+    padding: 0;
+    z-index: 2;
+    transition: color 0.2s;
+}
+.password-toggle:hover {
+    color: var(--primary);
+}
+.password-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    border-radius: 4px;
+}
+
 label { 
     font-weight: 700; font-size: 12px; text-transform: uppercase; 
     letter-spacing: 0.8px; display: block; margin-top: 20px; 

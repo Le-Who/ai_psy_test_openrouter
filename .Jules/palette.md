@@ -5,3 +5,7 @@
 ## 2024-05-21 - [Accessible Glassmorphism Menus]
 **Learning:** For glassmorphism menus implemented with `div`s, replacing them with semantic `<button`> tags plus a CSS reset (`background: transparent; border: none; text-align: left`) is the most robust way to add accessibility without breaking the visual design.
 **Action:** Use the `.theme-opt` CSS reset pattern for any new interactive list items in the design system.
+
+## 2024-06-25 - [Password Visibility Toggle]
+**Learning:** Native `input[type="password"]` lacks a toggle mechanism, causing friction for users entering complex keys. Custom implementations must handle keyboard focus (`:focus-visible`) and dynamic `aria-label` updates to remain accessible.
+**Action:** Use a semantic `<button>` wrapper (not `div` or `span`) for toggles, ensuring it follows the input in DOM order but appears visually integrated via absolute positioning.

@@ -1063,6 +1063,18 @@ NOTES: ${notes || "нет"}`;
       const t = document.getElementById("loadingText");
       if (t) t.innerText = text;
     }
+  },
+
+  togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+
+    // Update button icon and label
+    btn.innerHTML = isPassword ? '🙈' : '👁️';
+    btn.setAttribute('aria-label', isPassword ? 'Скрыть API ключ' : 'Показать API ключ');
   }
 };
 
