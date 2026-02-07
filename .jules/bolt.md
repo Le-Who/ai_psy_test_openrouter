@@ -11,3 +11,6 @@
 ## 2026-02-06 - [Inefficient Naming Collision Check]
 **Learning:** `Storage.save` used a `while` loop with `array.some` to check for unique names, resulting in O(N*K) complexity which spiked to ~760ms for 1000 items.
 **Action:** Use a `Set` for O(1) existence checks when validating uniqueness against a large list of items.
+## 2026-03-01 - [DOM Query Optimization]
+**Learning:** Frequent `document.getElementById` and `querySelectorAll` calls inside rendering loops (`renderQ`) add measurable overhead, especially for static elements like views and button containers.
+**Action:** Cache DOM elements in an `app.ui` object during initialization (`initUI`) and reuse these references in render methods to ensure O(1) access.

@@ -20,11 +20,35 @@ const app = {
     duelHostResultName: null
   },
 
+  ui: {},
+
   // =========================
   // INIT
   // =========================
 
+  initUI() {
+    // Views
+    this.ui.setupView = document.getElementById("setupView");
+    this.ui.testView = document.getElementById("testView");
+    this.ui.resultsView = document.getElementById("resultsView");
+    this.ui.libraryView = document.getElementById("libraryView");
+    this.ui.duelView = document.getElementById("duelView");
+
+    // Test Elements
+    this.ui.qNum = document.getElementById("qNum");
+    this.ui.qText = document.getElementById("qText");
+    this.ui.progressBar = document.getElementById("progressBar");
+    this.ui.backBtn = document.getElementById("backBtn");
+    this.ui.psyContainer = document.getElementById("psyContainer");
+    this.ui.quizContainer = document.getElementById("quizContainer");
+
+    // Static Psy Buttons
+    this.ui.psyButtons = this.ui.psyContainer.querySelectorAll(".likert-opt");
+  },
+
   init() {
+    this.initUI();
+
     const savedKey = localStorage.getItem("user_api_key");
     if (savedKey) {
       const input = document.getElementById("apiKeyInput");
@@ -377,42 +401,49 @@ NOTES: ${notes || "нет"}`;
       (this.state.mode === "duel" &&
         this.state.blueprint.testType === "quiz");
 
-    document.getElementById("qNum").innerText =
-      (this.state.step + 1).toString() + "/" + total.toString();
-    document.getElementById("qText").innerText = q.text;
+    // OPTIMIZATION: Use cached UI elements
+    if (this.ui.qNum)
+      this.ui.qNum.innerText = (this.state.step + 1).toString() + "/" + total.toString();
+    if (this.ui.qText)
+      this.ui.qText.innerText = q.text;
 
-    document.getElementById("progressBar").style.width =
-      ((this.state.step + 1) / total) * 100 + "%";
+    if (this.ui.progressBar)
+      this.ui.progressBar.style.width = ((this.state.step + 1) / total) * 100 + "%";
 
-    const backBtn = document.getElementById("backBtn");
-    backBtn.style.visibility =
-      !isQuizMode && this.state.step > 0 ? "visible" : "hidden";
+    const backBtn = this.ui.backBtn;
+    if (backBtn)
+      backBtn.style.visibility = !isQuizMode && this.state.step > 0 ? "visible" : "hidden";
 
-    const psyDiv = document.getElementById("psyContainer");
-    const quizDiv = document.getElementById("quizContainer");
+    const psyDiv = this.ui.psyContainer;
+    const quizDiv = this.ui.quizContainer;
 
     if (isQuizMode) {
-      psyDiv.style.display = "none";
-      quizDiv.style.display = "flex";
-      let html = "";
-      q.options.forEach((opt, idx) => {
-        html += `<button class="quiz-opt" onclick="app.handleQuizAnswer(${idx}, this)">${Utils.escapeHtml(opt)}</button>`;
-      });
-      quizDiv.innerHTML = html;
+      if (psyDiv) psyDiv.style.display = "none";
+      if (quizDiv) {
+        quizDiv.style.display = "flex";
+        let html = "";
+        q.options.forEach((opt, idx) => {
+          html += `<button class="quiz-opt" onclick="app.handleQuizAnswer(${idx}, this)">${Utils.escapeHtml(opt)}</button>`;
+        });
+        quizDiv.innerHTML = html;
+      }
     } else {
-      psyDiv.style.display = "grid";
-      quizDiv.style.display = "none";
-      const btns = psyDiv.querySelectorAll(".likert-opt");
-      btns.forEach((b) => {
-        b.classList.remove("selected");
-        b.setAttribute("aria-pressed", "false");
-      });
-      const prevAns = this.state.answers[this.state.step];
-      if (prevAns !== undefined) {
-        const selectedBtn = btns[prevAns - 1];
-        if (selectedBtn) {
-          selectedBtn.classList.add("selected");
-          selectedBtn.setAttribute("aria-pressed", "true");
+      if (psyDiv) psyDiv.style.display = "grid";
+      if (quizDiv) quizDiv.style.display = "none";
+
+      const btns = this.ui.psyButtons;
+      if (btns) {
+        btns.forEach((b) => {
+          b.classList.remove("selected");
+          b.setAttribute("aria-pressed", "false");
+        });
+        const prevAns = this.state.answers[this.state.step];
+        if (prevAns !== undefined) {
+          const selectedBtn = btns[prevAns - 1];
+          if (selectedBtn) {
+            selectedBtn.classList.add("selected");
+            selectedBtn.setAttribute("aria-pressed", "true");
+          }
         }
       }
     }
@@ -427,17 +458,17 @@ NOTES: ${notes || "нет"}`;
 
   handlePsyAnswer(val) {
     this.state.answers[this.state.step] = val;
-    const btns =
-      document
-        .getElementById("psyContainer")
-        .querySelectorAll(".likert-opt");
-    btns.forEach((b) => {
-      b.classList.remove("selected");
-      b.setAttribute("aria-pressed", "false");
-    });
-    if (btns[val - 1]) {
-      btns[val - 1].classList.add("selected");
-      btns[val - 1].setAttribute("aria-pressed", "true");
+    // OPTIMIZATION: Use cached buttons
+    const btns = this.ui.psyButtons;
+    if (btns) {
+      btns.forEach((b) => {
+        b.classList.remove("selected");
+        b.setAttribute("aria-pressed", "false");
+      });
+      if (btns[val - 1]) {
+        btns[val - 1].classList.add("selected");
+        btns[val - 1].setAttribute("aria-pressed", "true");
+      }
     }
     setTimeout(() => this.nextQuestion(), 300);
   },
@@ -1048,11 +1079,11 @@ NOTES: ${notes || "нет"}`;
   setView(view) {
     ["setupView", "testView", "resultsView", "libraryView", "duelView"].forEach(
       (v) => {
-        const el = document.getElementById(v);
+        const el = this.ui[v] || document.getElementById(v);
         if (el) el.style.display = "none";
       }
     );
-    const target = document.getElementById(view + "View");
+    const target = this.ui[view + "View"] || document.getElementById(view + "View");
     if (target) target.style.display = "block";
   },
 
