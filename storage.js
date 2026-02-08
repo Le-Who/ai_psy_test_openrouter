@@ -76,12 +76,14 @@ const Storage = {
 
             <div style="display:flex; gap:10px; align-items: center; flex-shrink: 0;">
                 <button class="btn" onclick="app.loadSavedTest('${test.id}')"
-                    style="width: auto; padding: 8px 16px; font-size: 14px; white-space: nowrap;">
+                    style="width: auto; padding: 8px 16px; font-size: 14px; white-space: nowrap;"
+                    aria-label="Начать тест: ${Utils.escapeHtml(test.theme)}">
                     ▶ Начать
                 </button>
                 <button onclick="app.deleteTest('${test.id}', this)"
                     class="btn-delete"
-                    title="Удалить">
+                    title="Удалить"
+                    aria-label="Удалить тест: ${Utils.escapeHtml(test.theme)}">
                     🗑
                 </button>
             </div>

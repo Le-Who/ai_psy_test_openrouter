@@ -1053,6 +1053,9 @@ NOTES: ${notes || "нет"}`;
       btn.classList.add("confirming");
       btn.innerHTML = "Точно?";
       btn.title = "Нажмите для подтверждения";
+      const originalLabel = btn.getAttribute("aria-label");
+      if (originalLabel) btn.dataset.originalLabel = originalLabel;
+      btn.setAttribute("aria-label", "Подтвердить удаление");
 
       // Reset after 3 seconds
       setTimeout(() => {
@@ -1061,6 +1064,9 @@ NOTES: ${notes || "нет"}`;
           btn.classList.remove("confirming");
           btn.innerHTML = "🗑";
           btn.title = "Удалить";
+          if (btn.dataset.originalLabel) {
+            btn.setAttribute("aria-label", btn.dataset.originalLabel);
+          }
         }
       }, 3000);
       return;
