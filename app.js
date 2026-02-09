@@ -921,107 +921,140 @@ NOTES: ${notes || "нет"}`;
   // SHARE LINK / SAVE
   // =========================
 
-    async createShareLink() {
-        if(!TINYTOKEN) return alert("Нужен TinyURL Token!");
-        
-        const btn = document.getElementById('shareBtn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ Создаем ссылку...";
-        btn.disabled = true;
+  getTinyToken() {
+    let token = localStorage.getItem("tinyurl_token");
+    if (!token) {
+      token = prompt("Введите TinyURL API Token для создания коротких ссылок:");
+      if (token) {
+        localStorage.setItem("tinyurl_token", token.trim());
+        token = token.trim();
+      }
+    }
+    return token;
+  },
 
-        try {
-            const isQuiz = (this.state.blueprint.testType === 'quiz'); 
-            const score = this.state.quizScore;
-            const name = prompt("Твое имя (для отображения в дуэли):", "Аноним") || "Аноним";
+  async createShareLink() {
+    const token = this.getTinyToken();
+    if (!token) return alert("Нужен TinyURL Token!");
 
-            const payload = { 
-                h: name, 
-                s: (isQuiz ? score : 0), 
-                r: (isQuiz ? null : this.state.lastResultName),
-                t: this.state.blueprint, 
-                q: this.state.questions 
-            };
-            
-            if(!payload.t.theme) payload.t.theme = document.getElementById('themeInput').value || "Тест";
+    const btn = document.getElementById("shareBtn");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "⏳ Создаем ссылку...";
+    btn.disabled = true;
 
-            const jsonString = JSON.stringify(payload);
-            const compressed = LZString.compressToEncodedURIComponent(jsonString);
-            const longUrl = `${window.location.origin}${window.location.pathname}#d=${compressed}`;
+    try {
+      const isQuiz = this.state.blueprint.testType === "quiz";
+      const score = this.state.quizScore;
+      const name =
+        prompt("Твое имя (для отображения в дуэли):", "Аноним") || "Аноним";
 
-            const response = await fetch('https://api.tinyurl.com/create', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${TINYTOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
-            });
+      const payload = {
+        h: name,
+        s: isQuiz ? score : 0,
+        r: isQuiz ? null : this.state.lastResultName,
+        t: this.state.blueprint,
+        q: this.state.questions
+      };
 
-            if (!response.ok) throw new Error('API Error');
-            const data = await response.json();
-            const tinyUrl = data.data.tiny_url;
-            
-            // --- UX IMPROVEMENT: CLIPBOARD + TOAST ---
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(tinyUrl);
-                this.showToast("Ссылка скопирована! Отправь другу 🚀");
-            } else {
-                prompt("Скопируй ссылку:", tinyUrl);
-            }
+      if (!payload.t.theme)
+        payload.t.theme =
+          document.getElementById("themeInput").value || "Тест";
 
-        } catch (e) {
-            console.error(e);
-            this.showToast("Ошибка создания ссылки 😢");
-        } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
+      const jsonString = JSON.stringify(payload);
+      const compressed = LZString.compressToEncodedURIComponent(jsonString);
+      const longUrl = `${window.location.origin}${window.location.pathname}#d=${compressed}`;
+
+      const response = await fetch("https://api.tinyurl.com/create", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
+      });
+
+      if (!response.ok) throw new Error("API Error");
+      const data = await response.json();
+      const tinyUrl = data.data.tiny_url;
+
+      // --- UX IMPROVEMENT: CLIPBOARD + TOAST ---
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(tinyUrl);
+        this.showToast("Ссылка скопирована! Отправь другу 🚀");
+      } else {
+        prompt("Скопируй ссылку:", tinyUrl);
+      }
+    } catch (e) {
+      console.error(e);
+      this.showToast("Ошибка создания ссылки 😢");
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  },
+
+  async saveTest() {
+    const theme =
+      this.state.blueprint.theme ||
+      document.getElementById("themeInput").value ||
+      "Тест";
+    let shortUrl = null;
+
+    try {
+      const token = localStorage.getItem("tinyurl_token");
+      if (typeof LZString !== "undefined" && token) {
+        const isQuiz = this.state.blueprint.testType === "quiz";
+        const score = this.state.quizScore;
+
+        const payload = {
+          h: "Аноним",
+          s: isQuiz ? score : 0,
+          r: isQuiz ? null : this.state.lastResultName || null,
+          t: this.state.blueprint,
+          q: this.state.questions
+        };
+
+        if (!payload.t.theme) payload.t.theme = theme;
+
+        const jsonString = JSON.stringify(payload);
+        const compressed = LZString.compressToEncodedURIComponent(jsonString);
+        const longUrl = `${window.location.origin}${window.location.pathname}#d=${compressed}`;
+
+        const response = await fetch("https://api.tinyurl.com/create", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          shortUrl =
+            data && data.data && data.data.tiny_url
+              ? data.data.tiny_url
+              : null;
         }
-    },
-    
-    async saveTest() {
-        const theme = this.state.blueprint.theme || document.getElementById('themeInput').value || "Тест";
-        let shortUrl = null;
+      }
+    } catch (e) {
+      console.warn("Short link generation failed (saveTest):", e);
+    }
 
-        try {
-            if (typeof LZString !== 'undefined' && TINYTOKEN) {
-                const isQuiz = (this.state.blueprint.testType === 'quiz');
-                const score = this.state.quizScore;
+    Storage.save(
+      this.state.blueprint,
+      this.state.questions,
+      theme,
+      shortUrl
+    );
+    this.showToast("Тест сохранен в библиотеку! 💾");
 
-                const payload = { 
-                    h: "Аноним", 
-                    s: (isQuiz ? score : 0), 
-                    r: (isQuiz ? null : this.state.lastResultName || null),
-                    t: this.state.blueprint, 
-                    q: this.state.questions 
-                };
-
-                if (!payload.t.theme) payload.t.theme = theme;
-
-                const jsonString = JSON.stringify(payload);
-                const compressed = LZString.compressToEncodedURIComponent(jsonString);
-                const longUrl = `${window.location.origin}${window.location.pathname}#d=${compressed}`;
-
-                const response = await fetch('https://api.tinyurl.com/create', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${TINYTOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    shortUrl = data && data.data && data.data.tiny_url ? data.data.tiny_url : null;
-                }
-            }
-        } catch (e) {
-            console.warn("Short link generation failed (saveTest):", e);
-        }
-
-        Storage.save(this.state.blueprint, this.state.questions, theme, shortUrl);
-        this.showToast("Тест сохранен в библиотеку! 💾");
-        
-        const btn = document.getElementById('saveTestBtn');
-        if (btn) {
-            btn.innerText = "✅ Сохранено";
-            btn.disabled = true;
-        }
-    },
+    const btn = document.getElementById("saveTestBtn");
+    if (btn) {
+      btn.innerText = "✅ Сохранено";
+      btn.disabled = true;
+    }
+  },
 
   loadSavedTest(id) {
     const test = Storage.getById(id);
