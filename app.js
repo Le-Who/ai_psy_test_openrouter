@@ -44,6 +44,25 @@ const app = {
 
     // Static Psy Buttons
     this.ui.psyButtons = this.ui.psyContainer.querySelectorAll(".likert-opt");
+
+    // Form Inputs
+    this.ui.themeInput = document.getElementById("themeInput");
+    this.ui.notesInput = document.getElementById("notesInput");
+    this.ui.apiKeyInput = document.getElementById("apiKeyInput");
+    this.ui.audienceInput = document.getElementById("audienceInput");
+    this.ui.difficultyInput = document.getElementById("difficultyInput");
+    this.ui.qCountInput = document.getElementById("qCountInput");
+
+    // Layout & Groups
+    this.ui.libraryContent = document.getElementById("libraryContent");
+    this.ui.audienceGroup = document.getElementById("audienceGroup");
+    this.ui.difficultyGroup = document.getElementById("difficultyGroup");
+    this.ui.errorBox = document.getElementById("errorBox");
+    this.ui.loadingOverlay = document.getElementById("loadingOverlay");
+    this.ui.loadingText = document.getElementById("loadingText");
+    this.ui.tabPsy = document.getElementById("tabPsy");
+    this.ui.tabQuiz = document.getElementById("tabQuiz");
+    this.ui.resContent = document.getElementById("resContent");
   },
 
   init() {
@@ -51,8 +70,7 @@ const app = {
 
     const savedKey = localStorage.getItem("user_api_key");
     if (savedKey) {
-      const input = document.getElementById("apiKeyInput");
-      if (input) input.value = savedKey;
+      if (this.ui.apiKeyInput) this.ui.apiKeyInput.value = savedKey;
     }
 
     this.checkHash();
@@ -66,12 +84,8 @@ const app = {
     const form = document.getElementById("setupForm");
     if (form) form.addEventListener("submit", (e) => this.start(e));
 
-    document
-      .getElementById("tabPsy")
-      ?.addEventListener("click", () => this.setMode("psy"));
-    document
-      .getElementById("tabQuiz")
-      ?.addEventListener("click", () => this.setMode("quiz"));
+    if (this.ui.tabPsy) this.ui.tabPsy.addEventListener("click", () => this.setMode("psy"));
+    if (this.ui.tabQuiz) this.ui.tabQuiz.addEventListener("click", () => this.setMode("quiz"));
 
     document
       .getElementById("backBtn")
@@ -249,8 +263,7 @@ const app = {
 
   openLibrary() {
     this.setView("library");
-    const el = document.getElementById("libraryContent");
-    if (el) el.innerHTML = Storage.renderLibraryHTML();
+    if (this.ui.libraryContent) this.ui.libraryContent.innerHTML = Storage.renderLibraryHTML();
   },
 
   closeLibrary() {
@@ -259,20 +272,15 @@ const app = {
 
   setMode(mode) {
     this.state.mode = mode;
-    document
-      .getElementById("tabPsy")
-      .classList.toggle("active", mode === "psy");
-    document
-      .getElementById("tabQuiz")
-      .classList.toggle("active", mode === "quiz");
+    if (this.ui.tabPsy) this.ui.tabPsy.classList.toggle("active", mode === "psy");
+    if (this.ui.tabQuiz) this.ui.tabQuiz.classList.toggle("active", mode === "quiz");
 
-    document.getElementById("audienceGroup").style.display =
-      mode === "psy" ? "block" : "none";
-    document.getElementById("difficultyGroup").style.display =
-      mode === "quiz" ? "block" : "none";
+    if (this.ui.audienceGroup) this.ui.audienceGroup.style.display = mode === "psy" ? "block" : "none";
+    if (this.ui.difficultyGroup) this.ui.difficultyGroup.style.display = mode === "quiz" ? "block" : "none";
 
-    document.getElementById("themeInput").placeholder =
-      mode === "psy" ? "Тема психологического теста..." : "Тема викторины...";
+    if (this.ui.themeInput) {
+      this.ui.themeInput.placeholder = mode === "psy" ? "Тема психологического теста..." : "Тема викторины...";
+    }
   },
 
   // =========================
@@ -289,35 +297,33 @@ const app = {
     this.state.questions = [];
     this.state.duelHostName = null;
 
-    const apiKey = document
-      .getElementById("apiKeyInput")
-      .value.trim();
-    const theme = document.getElementById("themeInput").value.trim();
-    const notes = document.getElementById("notesInput").value;
-    const count = document.getElementById("qCountInput").value;
+    const apiKey = this.ui.apiKeyInput ? this.ui.apiKeyInput.value.trim() : "";
+    const theme = this.ui.themeInput ? this.ui.themeInput.value.trim() : "";
+    const notes = this.ui.notesInput ? this.ui.notesInput.value : "";
+    const count = this.ui.qCountInput ? this.ui.qCountInput.value : "10";
 
     if (!theme) {
       this.showToast("Введите тему теста! 📝");
-      document.getElementById("themeInput").focus();
+      if (this.ui.themeInput) this.ui.themeInput.focus();
       return;
     }
 
     if (!apiKey) {
       this.showToast("API ключ обязателен! 🔑");
-      document.getElementById("apiKeyInput").focus();
+      if (this.ui.apiKeyInput) this.ui.apiKeyInput.focus();
       return;
     }
     localStorage.setItem("user_api_key", apiKey);
 
     const isQuiz = this.state.mode === "quiz";
     const contextParam = isQuiz
-      ? document.getElementById("difficultyInput").value
-      : document.getElementById("audienceInput").value;
+      ? (this.ui.difficultyInput ? this.ui.difficultyInput.value : "")
+      : (this.ui.audienceInput ? this.ui.audienceInput.value : "");
 
     const taskSuffix = isQuiz ? "quiz" : "psy";
 
     this.setLoading(true, "Генерируем архитектуру теста...");
-    document.getElementById("errorBox").style.display = "none";
+    if (this.ui.errorBox) this.ui.errorBox.style.display = "none";
 
     try {
       const archPrompt = `${theme}.
@@ -336,7 +342,7 @@ const app = {
       this.setLoading(true, "Генерируем вопросы...");
 
       const optionsCount = isQuiz
-        ? Number(document.getElementById("difficultyInput").value || 0)
+        ? Number((this.ui.difficultyInput ? this.ui.difficultyInput.value : 0))
         : 0;
 
       // ВАЖНО: передаём полный blueprint, а не только outcomes
@@ -380,9 +386,10 @@ NOTES: ${notes || "нет"}`;
     } catch (err) {
       console.error(err);
       this.setLoading(false);
-      const box = document.getElementById("errorBox");
-      box.style.display = "block";
-      box.innerHTML = err.message || "Ошибка генерации";
+      if (this.ui.errorBox) {
+        this.ui.errorBox.style.display = "block";
+        this.ui.errorBox.innerHTML = err.message || "Ошибка генерации";
+      }
       this.setView("setup");
     }
   },
@@ -484,16 +491,15 @@ NOTES: ${notes || "нет"}`;
       btn.classList.add("wrong");
     }
 
-    const allBtns = document.querySelectorAll(".quiz-opt");
+    const allBtns = this.ui.quizContainer ? this.ui.quizContainer.querySelectorAll(".quiz-opt") : [];
     if (allBtns[q.correctIndex]) {
       allBtns[q.correctIndex].classList.add("correct");
     }
-    document
-      .querySelectorAll(".quiz-opt")
-      .forEach((b) => {
-        b.classList.add("disabled");
-        b.disabled = true;
-      });
+
+    allBtns.forEach((b) => {
+      b.classList.add("disabled");
+      b.disabled = true;
+    });
 
     setTimeout(() => this.nextQuestion(), 1200);
   },
@@ -581,7 +587,7 @@ NOTES: ${notes || "нет"}`;
     };
 
     const outcomes = this.state.blueprint.outcomes;
-    const container = document.getElementById("resContent");
+    const container = this.ui.resContent || document.getElementById("resContent");
     let html = "";
     let winningResultName = "";
 
@@ -942,7 +948,7 @@ NOTES: ${notes || "нет"}`;
                 q: this.state.questions 
             };
             
-            if(!payload.t.theme) payload.t.theme = document.getElementById('themeInput').value || "Тест";
+            if(!payload.t.theme) payload.t.theme = (this.ui.themeInput ? this.ui.themeInput.value : "") || "Тест";
 
             const jsonString = JSON.stringify(payload);
             const compressed = LZString.compressToEncodedURIComponent(jsonString);
@@ -976,7 +982,7 @@ NOTES: ${notes || "нет"}`;
     },
     
     async saveTest() {
-        const theme = this.state.blueprint.theme || document.getElementById('themeInput').value || "Тест";
+        const theme = this.state.blueprint.theme || (this.ui.themeInput ? this.ui.themeInput.value : "") || "Тест";
         let shortUrl = null;
 
         try {
@@ -1094,11 +1100,9 @@ NOTES: ${notes || "нет"}`;
   },
 
   setLoading(active, text) {
-    const el = document.getElementById("loadingOverlay");
-    if (el) el.style.display = active ? "flex" : "none";
-    if (text) {
-      const t = document.getElementById("loadingText");
-      if (t) t.innerText = text;
+    if (this.ui.loadingOverlay) this.ui.loadingOverlay.style.display = active ? "flex" : "none";
+    if (text && this.ui.loadingText) {
+      this.ui.loadingText.innerText = text;
     }
   }
 };
