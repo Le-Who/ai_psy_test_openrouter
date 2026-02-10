@@ -1,7 +1,7 @@
 // AI Universal Test Generator - Core Logic v6.0 Final
 // UI/UX Polish, Features: Glassmorphism, Clipboard API, Confetti, Toast Notifications
 
-// TINYTOKEN moved to app-settings.js
+// TINYTOKEN managed via localStorage
 // api object moved to api.js
 
 const app = {
@@ -53,6 +53,12 @@ const app = {
     if (savedKey) {
       const input = document.getElementById("apiKeyInput");
       if (input) input.value = savedKey;
+    }
+
+    const savedTiny = localStorage.getItem("tinyurl_token");
+    if (savedTiny) {
+      const input = document.getElementById("tinyUrlInput");
+      if (input) input.value = savedTiny;
     }
 
     this.checkHash();
@@ -308,6 +314,9 @@ const app = {
       return;
     }
     localStorage.setItem("user_api_key", apiKey);
+
+    const tinyToken = document.getElementById("tinyUrlInput").value.trim();
+    if (tinyToken) localStorage.setItem("tinyurl_token", tinyToken);
 
     const isQuiz = this.state.mode === "quiz";
     const contextParam = isQuiz
@@ -922,7 +931,8 @@ NOTES: ${notes || "нет"}`;
   // =========================
 
     async createShareLink() {
-        if(!TINYTOKEN) return alert("Нужен TinyURL Token!");
+        const tinyToken = localStorage.getItem("tinyurl_token");
+        if(!tinyToken) return alert("Нужен TinyURL Token! Укажите его в настройках (при создании теста).");
         
         const btn = document.getElementById('shareBtn');
         const originalText = btn.innerHTML;
@@ -950,7 +960,7 @@ NOTES: ${notes || "нет"}`;
 
             const response = await fetch('https://api.tinyurl.com/create', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${TINYTOKEN}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${tinyToken}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
             });
 
@@ -980,7 +990,8 @@ NOTES: ${notes || "нет"}`;
         let shortUrl = null;
 
         try {
-            if (typeof LZString !== 'undefined' && TINYTOKEN) {
+            const tinyToken = localStorage.getItem("tinyurl_token");
+            if (typeof LZString !== 'undefined' && tinyToken) {
                 const isQuiz = (this.state.blueprint.testType === 'quiz');
                 const score = this.state.quizScore;
 
@@ -1000,7 +1011,7 @@ NOTES: ${notes || "нет"}`;
 
                 const response = await fetch('https://api.tinyurl.com/create', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${TINYTOKEN}`, 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${tinyToken}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
                 });
 
