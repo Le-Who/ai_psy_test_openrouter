@@ -18,3 +18,7 @@
 ## 2024-05-25 - [Persistent Set Cache for Collision Checks]
 **Learning:** Even with O(1) lookups via `Set`, rebuilding the `Set` from a large array on every `save()` operation remains O(N) and blocks the main thread during bulk operations or frequent saves.
 **Action:** Maintain a persistent `_themesCache` (Set) in the `Storage` class and update it incrementally (add/delete) to keep `save()` complexity closer to O(1).
+
+## 2026-05-20 - [DocumentFragment for List Rendering]
+**Learning:** Concatenating HTML strings via `innerHTML` forces the browser to re-parse the entire string, which is inefficient for dynamic lists like quiz options.
+**Action:** Use `DocumentFragment` and `textContent` for batch DOM updates. This avoids parsing overhead and naturally prevents XSS without explicit escaping.
