@@ -1,7 +1,7 @@
 // AI Universal Test Generator - Core Logic v6.0 Final
 // UI/UX Polish, Features: Glassmorphism, Clipboard API, Confetti, Toast Notifications
 
-// TINYTOKEN moved to app-settings.js
+// TINYTOKEN removed. Handled dynamically.
 // api object moved to api.js
 
 const app = {
@@ -921,8 +921,21 @@ NOTES: ${notes || "нет"}`;
   // SHARE LINK / SAVE
   // =========================
 
+  getTinyToken(forcePrompt = true) {
+    let token = localStorage.getItem("tinyurl_token");
+    if (!token && forcePrompt) {
+      token = prompt("Введите TinyURL API Token (для сокращения ссылок):");
+      if (token) {
+        token = token.trim();
+        localStorage.setItem("tinyurl_token", token);
+      }
+    }
+    return token;
+  },
+
     async createShareLink() {
-        if(!TINYTOKEN) return alert("Нужен TinyURL Token!");
+        const token = this.getTinyToken(true);
+        if(!token) return alert("Нужен TinyURL Token!");
         
         const btn = document.getElementById('shareBtn');
         const originalText = btn.innerHTML;
@@ -950,7 +963,7 @@ NOTES: ${notes || "нет"}`;
 
             const response = await fetch('https://api.tinyurl.com/create', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${TINYTOKEN}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
             });
 
@@ -980,7 +993,8 @@ NOTES: ${notes || "нет"}`;
         let shortUrl = null;
 
         try {
-            if (typeof LZString !== 'undefined' && TINYTOKEN) {
+            const token = this.getTinyToken(false);
+            if (typeof LZString !== 'undefined' && token) {
                 const isQuiz = (this.state.blueprint.testType === 'quiz');
                 const score = this.state.quizScore;
 
@@ -1000,7 +1014,7 @@ NOTES: ${notes || "нет"}`;
 
                 const response = await fetch('https://api.tinyurl.com/create', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${TINYTOKEN}`, 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
                 });
 
