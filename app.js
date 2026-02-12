@@ -56,6 +56,7 @@ const app = {
     }
 
     this.checkHash();
+    this.runDuelHashRegressionCheck();
 
     window.onpopstate = () => {
       history.replaceState(null, document.title, window.location.pathname);
@@ -163,18 +164,73 @@ const app = {
   // DUEL SHARE / HASH
   // =========================
 
+  extractDuelPayloadFromHash(hash) {
+    if (typeof hash !== "string") return null;
+
+    const supportedPrefixes = ["#d=", "#d:"];
+    const prefix = supportedPrefixes.find((pfx) => hash.startsWith(pfx));
+    if (!prefix) return null;
+
+    if (typeof LZString === "undefined")
+      throw new Error("LZString library not loaded");
+
+    const compressed = hash.substring(prefix.length);
+    const decompressed = LZString.decompressFromEncodedURIComponent(compressed);
+    if (!decompressed) return null;
+
+    const data = JSON.parse(decompressed);
+    if (!data || !data.t || !data.q) return null;
+
+    return data;
+  },
+
+  buildDuelHashFromPayload(payload) {
+    if (typeof LZString === "undefined")
+      throw new Error("LZString library not loaded");
+
+    const jsonString = JSON.stringify(payload);
+    const compressed = LZString.compressToEncodedURIComponent(jsonString);
+    return `#d=${compressed}`;
+  },
+
+  runDuelHashRegressionCheck() {
+    if (typeof LZString === "undefined") return;
+
+    try {
+      const payload = {
+        h: "Regression",
+        s: 1,
+        r: null,
+        t: { theme: "Regression", testType: "quiz" },
+        q: [{ text: "Q1" }]
+      };
+
+      const canonicalHash = this.buildDuelHashFromPayload(payload);
+      const legacyHash = canonicalHash.replace("#d=", "#d:");
+      const parsedCanonical = this.extractDuelPayloadFromHash(canonicalHash);
+      const parsedLegacy = this.extractDuelPayloadFromHash(legacyHash);
+      const rebuiltFromLegacy = this.buildDuelHashFromPayload(parsedLegacy);
+
+      const passed =
+        canonicalHash.startsWith("#d=") &&
+        !!parsedCanonical &&
+        !!parsedLegacy &&
+        rebuiltFromLegacy.startsWith("#d=");
+
+      if (!passed) {
+        console.error("Duel hash regression check failed");
+      }
+    } catch (e) {
+      console.error("Duel hash regression check failed", e);
+    }
+  },
+
   checkHash() {
-    if (window.location.hash.startsWith("#d:")) {
+    if (window.location.hash.startsWith("#d=") || window.location.hash.startsWith("#d:")) {
       try {
-        if (typeof LZString === "undefined")
-          throw new Error("LZString library not loaded");
+        const data = this.extractDuelPayloadFromHash(window.location.hash);
 
-        const compressed = window.location.hash.substring(3);
-        const decompressed =
-          LZString.decompressFromEncodedURIComponent(compressed);
-        const data = JSON.parse(decompressed);
-
-        if (data && data.t && data.q) {
+        if (data) {
           this.state.mode = "duel";
           this.state.blueprint = data.t;
           this.state.questions = data.q;
@@ -944,9 +1000,7 @@ NOTES: ${notes || "нет"}`;
             
             if(!payload.t.theme) payload.t.theme = document.getElementById('themeInput').value || "Тест";
 
-            const jsonString = JSON.stringify(payload);
-            const compressed = LZString.compressToEncodedURIComponent(jsonString);
-            const longUrl = `${window.location.origin}${window.location.pathname}#d=${compressed}`;
+            const longUrl = `${window.location.origin}${window.location.pathname}${this.buildDuelHashFromPayload(payload)}`;
 
             const response = await fetch('https://api.tinyurl.com/create', {
                 method: 'POST',
@@ -994,9 +1048,7 @@ NOTES: ${notes || "нет"}`;
 
                 if (!payload.t.theme) payload.t.theme = theme;
 
-                const jsonString = JSON.stringify(payload);
-                const compressed = LZString.compressToEncodedURIComponent(jsonString);
-                const longUrl = `${window.location.origin}${window.location.pathname}#d=${compressed}`;
+                const longUrl = `${window.location.origin}${window.location.pathname}${this.buildDuelHashFromPayload(payload)}`;
 
                 const response = await fetch('https://api.tinyurl.com/create', {
                     method: 'POST',
