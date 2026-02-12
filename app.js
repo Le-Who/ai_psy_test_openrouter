@@ -481,11 +481,17 @@ NOTES: ${notes || "нет"}`;
       if (psyDiv) psyDiv.style.display = "none";
       if (quizDiv) {
         quizDiv.style.display = "flex";
-        let html = "";
+        // OPTIMIZATION: Use DocumentFragment for faster DOM updates
+        const fragment = document.createDocumentFragment();
         q.options.forEach((opt, idx) => {
-          html += `<button class="quiz-opt" onclick="app.handleQuizAnswer(${idx}, this)">${Utils.escapeHtml(opt)}</button>`;
+          const btn = document.createElement("button");
+          btn.className = "quiz-opt";
+          btn.textContent = opt;
+          btn.onclick = () => app.handleQuizAnswer(idx, btn);
+          fragment.appendChild(btn);
         });
-        quizDiv.innerHTML = html;
+        quizDiv.innerHTML = "";
+        quizDiv.appendChild(fragment);
       }
     } else {
       if (psyDiv) psyDiv.style.display = "grid";

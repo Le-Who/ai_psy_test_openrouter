@@ -18,3 +18,7 @@
 ## 2024-05-25 - [Persistent Set Cache for Collision Checks]
 **Learning:** Even with O(1) lookups via `Set`, rebuilding the `Set` from a large array on every `save()` operation remains O(N) and blocks the main thread during bulk operations or frequent saves.
 **Action:** Maintain a persistent `_themesCache` (Set) in the `Storage` class and update it incrementally (add/delete) to keep `save()` complexity closer to O(1).
+
+## 2026-03-01 - [Inefficient DOM Manipulation in Render Loop]
+**Learning:** The `renderQ` method used `innerHTML +=` inside a loop, causing repeated parsing and layout thrashing for each option.
+**Action:** Use `DocumentFragment` and `document.createElement` to batch DOM updates into a single reflow, improving rendering performance and XSS safety.
