@@ -41,6 +41,8 @@ const app = {
     this.ui.backBtn = document.getElementById("backBtn");
     this.ui.psyContainer = document.getElementById("psyContainer");
     this.ui.quizContainer = document.getElementById("quizContainer");
+    this.ui.inProgressSaveBtn = document.getElementById("inProgressSaveBtn");
+    this.ui.inProgressShareBtn = document.getElementById("inProgressShareBtn");
 
     // Static Psy Buttons
     this.ui.psyButtons = this.ui.psyContainer.querySelectorAll(".likert-opt");
@@ -466,6 +468,8 @@ NOTES: ${notes || "нет"}`;
     if (this.ui.progressBar)
       this.ui.progressBar.style.width = ((this.state.step + 1) / total) * 100 + "%";
 
+    this.updateInProgressActions();
+
     const backBtn = this.ui.backBtn;
     if (backBtn)
       backBtn.style.visibility = !isQuizMode && this.state.step > 0 ? "visible" : "hidden";
@@ -568,6 +572,30 @@ NOTES: ${notes || "нет"}`;
     if (this.state.step > 0) {
       this.state.step--;
       this.renderQ();
+    }
+  },
+
+  getShareButtonText() {
+    const isQuizMode =
+      this.state.mode === "quiz" ||
+      (this.state.mode === "duel" &&
+        this.state.blueprint &&
+        this.state.blueprint.testType === "quiz");
+
+    return isQuizMode
+      ? "Поделиться викториной"
+      : "Создать дуэль-ссылку";
+  },
+
+  updateInProgressActions() {
+    if (this.ui.inProgressShareBtn) {
+      this.ui.inProgressShareBtn.innerText = this.getShareButtonText();
+      this.ui.inProgressShareBtn.disabled = false;
+    }
+
+    if (this.ui.inProgressSaveBtn) {
+      this.ui.inProgressSaveBtn.innerText = "Сохранить тест";
+      this.ui.inProgressSaveBtn.disabled = false;
     }
   },
 
@@ -932,18 +960,12 @@ NOTES: ${notes || "нет"}`;
 
     this.state.lastResultName = winningResultName;
 
-    const isQuizMode =
-      this.state.mode === "quiz" ||
-      (this.state.mode === "duel" &&
-        this.state.blueprint.testType === "quiz");
-    const shareBtnText = isQuizMode
-      ? "Поделиться викториной"
-      : "Создать дуэль-ссылку";
+    const shareBtnText = this.getShareButtonText();
 
     html += `
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:30px;">
-        <button id="saveTestBtn" class="btn" onclick="app.saveTest()" style="flex:1;">Сохранить тест</button>
-        <button id="shareBtn" class="btn btn-accent" onclick="app.createShareLink()" style="flex:1;">${shareBtnText}</button>
+        <button id="saveTestBtn" class="btn" onclick="app.saveTest(this)" style="flex:1;">Сохранить тест</button>
+        <button id="shareBtn" class="btn btn-accent" onclick="app.createShareLink(this)" style="flex:1;">${shareBtnText}</button>
       </div>
     `;
 
@@ -977,13 +999,15 @@ NOTES: ${notes || "нет"}`;
   // SHARE LINK / SAVE
   // =========================
 
-    async createShareLink() {
+    async createShareLink(btnEl = null) {
         if(!TINYTOKEN) return alert("Нужен TinyURL Token!");
         
-        const btn = document.getElementById('shareBtn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ Создаем ссылку...";
-        btn.disabled = true;
+        const btn = btnEl || document.getElementById('shareBtn') || document.getElementById('inProgressShareBtn');
+        const originalText = btn ? btn.innerHTML : null;
+        if (btn) {
+            btn.innerHTML = "⏳ Создаем ссылку...";
+            btn.disabled = true;
+        }
 
         try {
             const isQuiz = (this.state.blueprint.testType === 'quiz'); 
@@ -1024,12 +1048,14 @@ NOTES: ${notes || "нет"}`;
             console.error(e);
             this.showToast("Ошибка создания ссылки 😢");
         } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
     },
     
-    async saveTest() {
+    async saveTest(btnEl = null) {
         const theme = this.state.blueprint.theme || document.getElementById('themeInput').value || "Тест";
         let shortUrl = null;
 
@@ -1068,7 +1094,7 @@ NOTES: ${notes || "нет"}`;
         Storage.save(this.state.blueprint, this.state.questions, theme, shortUrl);
         this.showToast("Тест сохранен в библиотеку! 💾");
         
-        const btn = document.getElementById('saveTestBtn');
+        const btn = btnEl || document.getElementById('saveTestBtn') || document.getElementById('inProgressSaveBtn');
         if (btn) {
             btn.innerText = "✅ Сохранено";
             btn.disabled = true;

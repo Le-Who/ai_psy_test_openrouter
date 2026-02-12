@@ -162,6 +162,11 @@
                 <div id="quizContainer" class="quiz-grid" style="display:none;"></div>
             </div>
             
+            <div id="inProgressActions" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px;">
+                <button id="inProgressSaveBtn" class="btn" onclick="app.saveTest(this)" style="flex:1;">Сохранить тест</button>
+                <button id="inProgressShareBtn" class="btn btn-accent" onclick="app.createShareLink(this)" style="flex:1;">Создать дуэль-ссылку</button>
+            </div>
+
             <!-- Кнопку "Далее" убрали совсем, так как теперь везде авто-переход -->
         </div>
 
