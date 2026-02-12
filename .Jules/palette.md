@@ -13,3 +13,7 @@
 ## 2025-05-23 - [Dynamic Button States]
 **Learning:** When a button's visual text changes to convey a new state (like "Delete" -> "Confirm?"), the `aria-label` MUST update simultaneously. Screen reader users miss the context switch if the label remains static.
 **Action:** Use `dataset` to store the original label, update `aria-label` during the confirmation state, and restore it on timeout or cancellation.
+
+## 2026-06-21 - [Non-Intrusive Copy Actions]
+**Learning:** `prompt()` for copying text disrupts the user flow and feels dated. The modern Clipboard API (`navigator.clipboard.writeText`) is much smoother but requires a secure context (HTTPS/localhost) and explicit permissions in headless testing environments.
+**Action:** Always implement a fallback (e.g., `document.execCommand`) for older contexts and use non-intrusive toast notifications for success feedback instead of dialogs.

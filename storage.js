@@ -55,10 +55,12 @@ const Storage = {
         const count = test.questions ? test.questions.length : 0;
 
         const shortUrlBlock = test.shortUrl ? `
-            <div style="margin-top:6px; font-size: 12px; color: var(--text-muted);">
-                🔗 Короткая ссылка:&nbsp;
-                <button class="btn-text" style="padding:0; font-size:12px;" onclick="prompt('Ссылка на тест:', this.dataset.url)" data-url="${Utils.escapeHtml(test.shortUrl)}">
-                    открыть / скопировать
+            <div style="margin-top:6px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                🔗
+                <span style="font-family: monospace; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px;">${Utils.escapeHtml(test.shortUrl)}</span>
+                <button class="btn-text" style="padding:0; font-size:14px;" onclick="app.copyToClipboard('${Utils.escapeHtml(test.shortUrl)}')"
+                    title="Скопировать" aria-label="Скопировать ссылку">
+                    📋
                 </button>
             </div>` : '';
 

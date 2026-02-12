@@ -23,6 +23,41 @@ const app = {
   ui: {},
 
   // =========================
+  // HELPERS
+  // =========================
+
+  getTinyToken() {
+    if (typeof TINYTOKEN !== "undefined" && TINYTOKEN) return TINYTOKEN;
+    return localStorage.getItem("tinyurl_token");
+  },
+
+  copyToClipboard(text) {
+    if (!text) return;
+
+    const onSuccess = () => this.showToast("Скопировано! 📋");
+    const onFail = () => prompt("Скопируй вручную:", text);
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        onSuccess();
+      } catch (err) {
+        onFail();
+      }
+      document.body.removeChild(textArea);
+    }
+  },
+
+  // =========================
   // INIT
   // =========================
 
@@ -1000,8 +1035,16 @@ NOTES: ${notes || "нет"}`;
   // =========================
 
     async createShareLink(btnEl = null) {
-        if(!TINYTOKEN) return alert("Нужен TinyURL Token!");
-        
+        let token = this.getTinyToken();
+        if (!token) {
+            token = prompt("Введите TinyURL API Token для создания ссылок:");
+            if (token) {
+                localStorage.setItem("tinyurl_token", token);
+            } else {
+                return this.showToast("Нужен токен для ссылок 😢");
+            }
+        }
+
         const btn = btnEl || document.getElementById('shareBtn') || document.getElementById('inProgressShareBtn');
         const originalText = btn ? btn.innerHTML : null;
         if (btn) {
@@ -1028,7 +1071,7 @@ NOTES: ${notes || "нет"}`;
 
             const response = await fetch('https://api.tinyurl.com/create', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${TINYTOKEN}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
             });
 
@@ -1036,13 +1079,7 @@ NOTES: ${notes || "нет"}`;
             const data = await response.json();
             const tinyUrl = data.data.tiny_url;
             
-            // --- UX IMPROVEMENT: CLIPBOARD + TOAST ---
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(tinyUrl);
-                this.showToast("Ссылка скопирована! Отправь другу 🚀");
-            } else {
-                prompt("Скопируй ссылку:", tinyUrl);
-            }
+            this.copyToClipboard(tinyUrl);
 
         } catch (e) {
             console.error(e);
@@ -1060,7 +1097,8 @@ NOTES: ${notes || "нет"}`;
         let shortUrl = null;
 
         try {
-            if (typeof LZString !== 'undefined' && TINYTOKEN) {
+            const token = this.getTinyToken();
+            if (typeof LZString !== 'undefined' && token) {
                 const isQuiz = (this.state.blueprint.testType === 'quiz');
                 const score = this.state.quizScore;
 
@@ -1078,7 +1116,7 @@ NOTES: ${notes || "нет"}`;
 
                 const response = await fetch('https://api.tinyurl.com/create', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${TINYTOKEN}`, 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: longUrl, domain: "tiny.one" })
                 });
 

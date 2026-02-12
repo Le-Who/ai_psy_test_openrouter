@@ -33,7 +33,7 @@
         <!-- 1. SETUP VIEW -->
         <div id="setupView" class="view active">
             <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-                <button onclick="app.openLibrary()" class="btn-text">📂 Библиотека</button>
+                <button id="openLibraryBtn" onclick="app.openLibrary()" class="btn-text">📂 Библиотека</button>
             </div>
 
             <div class="card">
@@ -98,7 +98,7 @@
         <!-- 2. LIBRARY VIEW -->
         <div id="libraryView" class="view">
             <div style="margin-bottom:20px;">
-                <button onclick="app.closeLibrary()" class="btn-text">← Назад</button>
+                <button id="closeLibraryBtn" onclick="app.closeLibrary()" class="btn-text">← Назад</button>
             </div>
             <h2>Ваши тесты</h2>
             <div id="libraryContent"></div> <!-- ВАЖНО: ID libraryContent -->
