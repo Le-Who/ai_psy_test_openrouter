@@ -21,10 +21,10 @@
             </div>
             
             <button class="theme-toggle-btn" onclick="toggleThemeMenu()" title="Темы" aria-label="Переключить тему" aria-expanded="false">🎨</button>
-            <div class="theme-menu" id="themeMenu">
-                <button class="theme-opt" onclick="setTheme('light')"><div class="theme-circle" style="background: #fff; border: 1px solid #ddd;"></div> Светленькая</button>
-                <button class="theme-opt" onclick="setTheme('dark')"><div class="theme-circle" style="background: #1e293b;"></div> Темненькая</button>
-                <button class="theme-opt" onclick="setTheme('gray')"><div class="theme-circle" style="background: #e5e5e5; border: 1px solid #999;"></div> Серенькая</button>
+            <div class="theme-menu" id="themeMenu" role="menu">
+                <button class="theme-opt" onclick="setTheme('light')" role="menuitemradio" data-value="light" aria-checked="false"><div class="theme-circle" style="background: #fff; border: 1px solid #ddd;"></div> Светленькая</button>
+                <button class="theme-opt" onclick="setTheme('dark')" role="menuitemradio" data-value="dark" aria-checked="false"><div class="theme-circle" style="background: #1e293b;"></div> Темненькая</button>
+                <button class="theme-opt" onclick="setTheme('gray')" role="menuitemradio" data-value="gray" aria-checked="false"><div class="theme-circle" style="background: #e5e5e5; border: 1px solid #999;"></div> Серенькая</button>
             </div>
         </div>
 
@@ -226,6 +226,20 @@
         function handleMenuKeydown(e) {
             if (e.key === 'Escape') {
                 closeThemeMenu();
+            } else if (document.getElementById('themeMenu').classList.contains('active')) {
+                 const menu = document.getElementById('themeMenu');
+                 const items = [...menu.querySelectorAll('.theme-opt')];
+                 const index = items.indexOf(document.activeElement);
+
+                 if (index > -1) {
+                     if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        items[(index + 1) % items.length].focus();
+                     } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        items[(index - 1 + items.length) % items.length].focus();
+                     }
+                 }
             }
         }
 
@@ -246,18 +260,31 @@
             if (themeName === 'light') document.body.removeAttribute('data-theme');
             else document.body.setAttribute('data-theme', themeName);
             localStorage.setItem('user-theme', themeName);
+            updateThemeUI(themeName);
             closeThemeMenu();
+        }
+
+        function updateThemeUI(activeTheme) {
+            const opts = document.querySelectorAll('.theme-opt');
+            opts.forEach(btn => {
+                const isActive = btn.getAttribute('data-value') === activeTheme;
+                btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            });
         }
 
         function initTheme() {
             const saved = localStorage.getItem('user-theme');
+            let active = 'light';
             if (saved) {
+                active = saved;
                 if (saved !== 'light') document.body.setAttribute('data-theme', saved);
                 else document.body.removeAttribute('data-theme');
             }
             else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                 active = 'dark';
                  document.body.setAttribute('data-theme', 'dark');
             }
+            updateThemeUI(active);
         }
         initTheme();
     </script>

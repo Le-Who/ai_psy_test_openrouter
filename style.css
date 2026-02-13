@@ -153,6 +153,16 @@ body::before {
     font-family: inherit;
 }
 .theme-opt:hover { background: rgba(125,125,125,0.1); }
+.theme-opt[aria-checked="true"] {
+    background: rgba(125,125,125,0.15);
+    font-weight: 700;
+}
+.theme-opt[aria-checked="true"]::after {
+    content: '✓';
+    margin-left: auto;
+    font-weight: bold;
+    color: var(--primary);
+}
 .theme-circle { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--border); }
 
 /* --- 3. GLASS CARDS & INPUTS --- */
