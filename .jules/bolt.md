@@ -18,3 +18,7 @@
 ## 2024-05-25 - [Persistent Set Cache for Collision Checks]
 **Learning:** Even with O(1) lookups via `Set`, rebuilding the `Set` from a large array on every `save()` operation remains O(N) and blocks the main thread during bulk operations or frequent saves.
 **Action:** Maintain a persistent `_themesCache` (Set) in the `Storage` class and update it incrementally (add/delete) to keep `save()` complexity closer to O(1).
+
+## 2026-03-02 - [Avoid Full Re-render on Delete]
+**Learning:** `openLibrary()` rebuilds the entire HTML string and updates `innerHTML`, which is O(N) and causes layout thrashing. Deleting a single item caused a full re-render.
+**Action:** Use `element.remove()` to remove the DOM node directly (O(1)) and only call `openLibrary()` if the list becomes empty.
