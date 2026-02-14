@@ -1036,13 +1036,7 @@ NOTES: ${notes || "нет"}`;
             const data = await response.json();
             const tinyUrl = data.data.tiny_url;
             
-            // --- UX IMPROVEMENT: CLIPBOARD + TOAST ---
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(tinyUrl);
-                this.showToast("Ссылка скопирована! Отправь другу 🚀");
-            } else {
-                prompt("Скопируй ссылку:", tinyUrl);
-            }
+            await this.copyToClipboard(tinyUrl);
 
         } catch (e) {
             console.error(e);
@@ -1052,6 +1046,20 @@ NOTES: ${notes || "нет"}`;
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
+        }
+    },
+
+    async copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                this.showToast("Ссылка скопирована! 📋");
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                prompt("Скопируй ссылку:", text);
+            }
+        } else {
+            prompt("Скопируй ссылку:", text);
         }
     },
     
