@@ -384,6 +384,7 @@ label {
     color: #991b1b !important;
     border: 1px solid #fecaca !important;
     backdrop-filter: blur(5px);
+    white-space: pre-wrap; /* SENTINEL: Preserve newlines in error messages */
 }
 
 /* --- 9. DARK THEME SELECT DROPDOWN FIX --- */

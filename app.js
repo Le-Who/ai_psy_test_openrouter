@@ -440,7 +440,8 @@ NOTES: ${notes || "нет"}`;
       this.setLoading(false);
       const box = document.getElementById("errorBox");
       box.style.display = "block";
-      box.innerHTML = err.message || "Ошибка генерации";
+      // SENTINEL: Fix XSS risk by using textContent instead of innerHTML
+      box.textContent = err.message || "Ошибка генерации";
       this.setView("setup");
     }
   },
