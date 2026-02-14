@@ -18,3 +18,7 @@
 ## 2024-05-25 - [Persistent Set Cache for Collision Checks]
 **Learning:** Even with O(1) lookups via `Set`, rebuilding the `Set` from a large array on every `save()` operation remains O(N) and blocks the main thread during bulk operations or frequent saves.
 **Action:** Maintain a persistent `_themesCache` (Set) in the `Storage` class and update it incrementally (add/delete) to keep `save()` complexity closer to O(1).
+
+## 2026-03-02 - [Event Delegation for Quiz Options]
+**Learning:** Generating buttons with inline `onclick` handlers (via string interpolation) forces the browser to parse and attach a new function scope for every element, which is inefficient for repeated renders.
+**Action:** Use event delegation on the parent container (e.g., `quizContainer`) and `data-index` attributes on child elements to handle interactions with a single event listener.

@@ -84,6 +84,10 @@ const app = {
       ?.addEventListener("click", (e) => this.handlePsyClick(e));
 
     document
+      .getElementById("quizContainer")
+      ?.addEventListener("click", (e) => this.handleQuizClick(e));
+
+    document
       .getElementById("openLibraryBtn")
       ?.addEventListener("click", () => this.openLibrary());
     document
@@ -483,7 +487,7 @@ NOTES: ${notes || "нет"}`;
         quizDiv.style.display = "flex";
         let html = "";
         q.options.forEach((opt, idx) => {
-          html += `<button class="quiz-opt" onclick="app.handleQuizAnswer(${idx}, this)">${Utils.escapeHtml(opt)}</button>`;
+          html += `<button class="quiz-opt" data-index="${idx}">${Utils.escapeHtml(opt)}</button>`;
         });
         quizDiv.innerHTML = html;
       }
@@ -531,6 +535,14 @@ NOTES: ${notes || "нет"}`;
       }
     }
     setTimeout(() => this.nextQuestion(), 300);
+  },
+
+  // OPTIMIZATION: Event delegation for quiz answers to avoid inline handlers and reduce memory usage
+  handleQuizClick(e) {
+    const btn = e.target.closest(".quiz-opt");
+    if (!btn || btn.disabled || btn.classList.contains("disabled")) return;
+    const idx = parseInt(btn.dataset.index, 10);
+    this.handleQuizAnswer(idx, btn);
   },
 
   handleQuizAnswer(idx, btn) {
