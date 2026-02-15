@@ -152,6 +152,20 @@ const app = {
   // TOAST
   // =========================
 
+  async copyToClipboard(text, promptText = "Скопировано!") {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        this.showToast(promptText);
+        return;
+      } catch (err) {
+        console.error("Async: Could not copy text: ", err);
+      }
+    }
+    // Fallback
+    prompt("Скопируй ссылку:", text);
+  },
+
   showToast(message) {
     const x = document.getElementById("toast");
     if (!x) return;
@@ -1037,12 +1051,7 @@ NOTES: ${notes || "нет"}`;
             const tinyUrl = data.data.tiny_url;
             
             // --- UX IMPROVEMENT: CLIPBOARD + TOAST ---
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(tinyUrl);
-                this.showToast("Ссылка скопирована! Отправь другу 🚀");
-            } else {
-                prompt("Скопируй ссылку:", tinyUrl);
-            }
+            await this.copyToClipboard(tinyUrl, "Ссылка скопирована! Отправь другу 🚀");
 
         } catch (e) {
             console.error(e);
