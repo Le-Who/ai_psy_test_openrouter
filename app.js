@@ -996,11 +996,29 @@ NOTES: ${notes || "нет"}`;
   },
 
   // =========================
+  // CLIPBOARD UTILS
+  // =========================
+
+  async copyToClipboard(text, promptText = "Скопировано! 📋") {
+    if (!text) return;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        this.showToast(promptText);
+      } else {
+        throw new Error("Clipboard API unavailable");
+      }
+    } catch (err) {
+      prompt("Скопируй ссылку:", text);
+    }
+  },
+
+  // =========================
   // SHARE LINK / SAVE
   // =========================
 
     async createShareLink(btnEl = null) {
-        if(!TINYTOKEN) return alert("Нужен TinyURL Token!");
+        if(typeof TINYTOKEN === 'undefined' || !TINYTOKEN) return alert("Нужен TinyURL Token!");
         
         const btn = btnEl || document.getElementById('shareBtn') || document.getElementById('inProgressShareBtn');
         const originalText = btn ? btn.innerHTML : null;
@@ -1036,13 +1054,8 @@ NOTES: ${notes || "нет"}`;
             const data = await response.json();
             const tinyUrl = data.data.tiny_url;
             
-            // --- UX IMPROVEMENT: CLIPBOARD + TOAST ---
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(tinyUrl);
-                this.showToast("Ссылка скопирована! Отправь другу 🚀");
-            } else {
-                prompt("Скопируй ссылку:", tinyUrl);
-            }
+            // --- UX IMPROVEMENT: Refactored to use shared method ---
+            await this.copyToClipboard(tinyUrl, "Ссылка скопирована! Отправь другу 🚀");
 
         } catch (e) {
             console.error(e);
