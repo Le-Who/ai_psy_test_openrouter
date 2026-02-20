@@ -440,7 +440,7 @@ NOTES: ${notes || "нет"}`;
       this.setLoading(false);
       const box = document.getElementById("errorBox");
       box.style.display = "block";
-      box.innerHTML = err.message || "Ошибка генерации";
+      box.textContent = err.message || "Ошибка генерации";
       this.setView("setup");
     }
   },
