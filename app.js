@@ -1152,7 +1152,24 @@ NOTES: ${notes || "нет"}`;
 
     // Confirmed delete
     Storage.delete(id);
-    this.openLibrary();
+
+    // OPTIMIZATION: Remove element directly to avoid full re-render
+    if (btn) {
+      const card = btn.closest(".card");
+      if (card) {
+        card.remove();
+        // If library becomes empty, re-render to show empty state
+        const remaining = document.querySelectorAll("#libraryContent .card");
+        if (remaining.length === 0) {
+          this.openLibrary();
+        }
+      } else {
+        this.openLibrary();
+      }
+    } else {
+      this.openLibrary();
+    }
+
     this.showToast("Тест удален 🗑");
   },
 
