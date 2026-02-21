@@ -56,9 +56,9 @@ const Storage = {
 
         const shortUrlBlock = test.shortUrl ? `
             <div style="margin-top:6px; font-size: 12px; color: var(--text-muted);">
-                🔗 Короткая ссылка:&nbsp;
-                <button class="btn-text" style="padding:0; font-size:12px;" onclick="prompt('Ссылка на тест:', this.dataset.url)" data-url="${Utils.escapeHtml(test.shortUrl)}">
-                    открыть / скопировать
+                🔗
+                <button class="btn-text" style="padding:2px 5px; font-size:12px;" onclick="app.copyToClipboard(this.dataset.url)" data-url="${Utils.escapeHtml(test.shortUrl)}" aria-label="Скопировать ссылку" title="Скопировать ссылку">
+                    📋 Скопировать ссылку
                 </button>
             </div>` : '';
 

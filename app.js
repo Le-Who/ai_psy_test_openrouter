@@ -149,7 +149,7 @@ const app = {
   },
 
   // =========================
-  // TOAST
+  // TOAST & CLIPBOARD
   // =========================
 
   showToast(message) {
@@ -160,6 +160,20 @@ const app = {
     setTimeout(function () {
       x.className = x.className.replace("show", "");
     }, 3000);
+  },
+
+  async copyToClipboard(text, successMessage = "Скопировано!") {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        this.showToast(successMessage);
+      } else {
+        prompt("Скопируй текст:", text);
+      }
+    } catch (err) {
+      console.error("Clipboard failed", err);
+      prompt("Скопируй текст:", text);
+    }
   },
 
   // =========================
@@ -1036,13 +1050,7 @@ NOTES: ${notes || "нет"}`;
             const data = await response.json();
             const tinyUrl = data.data.tiny_url;
             
-            // --- UX IMPROVEMENT: CLIPBOARD + TOAST ---
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(tinyUrl);
-                this.showToast("Ссылка скопирована! Отправь другу 🚀");
-            } else {
-                prompt("Скопируй ссылку:", tinyUrl);
-            }
+            await this.copyToClipboard(tinyUrl, "Ссылка скопирована! Отправь другу 🚀");
 
         } catch (e) {
             console.error(e);
